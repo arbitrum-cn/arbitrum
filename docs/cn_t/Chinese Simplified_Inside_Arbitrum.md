@@ -4,7 +4,7 @@ title: Inside Arbitrum
 sidebar_label: Inside Arbitrum
 ---
 
-This document is a deep-dive explanation of Arbitrum’s design and the rationale for it. This isn’t API documentation, nor is it a guided tour of the code--look elsewhere for those. “Inside Arbitrum” is for people who want to understand Arbitrum’s design.
+本文是对 Arbitrum 的设计及其原理的深入解析。 This isn’t API documentation, nor is it a guided tour of the code--look elsewhere for those. “Inside Arbitrum” is for people who want to understand Arbitrum’s design.
 
 ## Why use Arbitrum?
 
