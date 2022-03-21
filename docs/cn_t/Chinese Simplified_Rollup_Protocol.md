@@ -4,7 +4,7 @@ title: Arbitrum Rollup Protocol
 sidebar_label: Arbitrum Rollup Protocol
 ---
 
-# Arbitrum Rollup Protocol Design
+# Arbitrum Rollup 协议设计
 
 Arbitrum Rollup is an off-chain protocol that is managed by an on-chain Ethereum contract. A dApp developer has a contract or set of contracts written in Solidity, and the developer wants to deploy those contracts onto a Layer 2 Arbitrum Rollup chain (ArbChain).
 
