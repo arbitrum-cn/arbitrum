@@ -61,11 +61,11 @@ function sendL2Message(address chain, bytes calldata messageData) external;
 
 直观地说：如果用户不想立即赎回，他们应该提供至少 `CallValue + MaxSubmission成本` 的存款价值。 If they do desire immediate execution, they should provide a DepositValue of at least `CallValue + MaxSubmissionCost + (GasPrice x MaxGas).`
 
-### Other Parameters
+### 其他参数
 
-- **Destination Address:** Address from which transaction will be initiated on L2.
-- **Credit-Back Address:** Address to which all excess gas is credited on L2; i.e., excess ETH for base submission cost (`MaxSubmissionCost - ActualSubmissionCostPaid`) and excess ETH provided for L2 execution (`(GasPrice x MaxGas) - ActualETHSpentInExecution`).
-- **Beneficiary:** Address to which CallValue will be credited to on L2 if the retryable ticket times out or is cancelled. The Beneficiary is also the address with the right to cancel a Retryable Ticket (if the ticket hasn’t been redeemed yet). `Calldata:` data encoding the L2 contract call. `Calldata Size:` CallData size.
+- 目的地址：在 L2 上发起交易的地址。
+- 返还地址： L2 上所有多余的 gas 地址；即，用于基础提交成本后，多余 ETH (MaxSubmissionCost - ActualSubmissionCostPaid)和为 L2 执行提供的多余 ETH (GasPrice x MaxGas) -ActualETHSpentInExecution)。
+- 受益人：如果可重试票证超时或被取消，CallValue 将记入 L2 的地址。 The Beneficiary is also the address with the right to cancel a Retryable Ticket (if the ticket hasn’t been redeemed yet). `Calldata:` data encoding the L2 contract call. `Calldata Size:` CallData size.
 
 ### Important Note About Base Submission Fee
 
