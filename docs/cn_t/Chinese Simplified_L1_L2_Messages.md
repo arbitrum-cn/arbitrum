@@ -19,7 +19,7 @@ function sendL2Message(address chain, bytes calldata messageData) external;
 
 最常见的跨链通信目的是充值和提现；不过这只是Arbitrum支持的通用型跨链合约调用中的特定一种 本章节描述了这些通用协议；深入解释，请见洞悉Arbitrum: 桥接。
 
-## 以太坊到Arbitrum：Retryable Tickets（可重试票据）
+## 以太坊到Arbitrum：Retryable Tickets（可重试票）
 
 可重试票据是 Arbitrum 协议的规范方法，此方法将通用消息从以太坊传递到 Arbitrum 可重试票据工作机理如下：一条L1交易提交到了收件箱中，其内容为向L2进行一笔转账（包含了calldata，callvalue，以及gas info）如果有提供任意数量的gas，L2上的交易会自动执行。在乐观的/正常的情况下，L2上的交易会立即成功。 如果该交易第一次没有执行成功，在L2上会进入一个『retry buffer重试缓存』。这意味着在一段时间内（与该链的挑战期有关，大约为一周），任何人都可以通过再次执行来尝试赎回该L2交易票据。
 
@@ -37,25 +37,25 @@ function sendL2Message(address chain, bytes calldata messageData) external;
 
 ### 交易类型/术语
 
-| Txn 类型 | 描述                                                                                                                                                    | 状态                                                                                                     | Tx ID                                                                  |
-| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| 可重试的票  | 位于重试缓冲区中的准事务，有一个可以执行的期限，即 "赎回"                                                                                                                        | 包含消息时发出；如果用户提供足够的 ETH 来支付基本费用 + callvalue，则成功，否则失败。                                                    | _keccak256(zeroPad(l2ChainId), zeroPad(BitFlipedinboxSequenceNumber))_ |
-| 赎回 Txn | 可重试的票据被成功赎回时；看起来像正常的L2交易。                                                                                                                             | 用户启动或通过自动兑换，成功兑换可重试票证后发出。                                                                              | _keccak256(zeroPad(retryable-ticket-id), 0)_                           |
-| 自动兑换记录 | Quasi-transaction ArbOS creates automatically which attempts to redeem a retryable ticket immediately when it is submitted using the ArbGas provided. | Attempted / emitted iff gas\*gas-price > 0. If it fails, retryable ticket stays in the retry buffer. | \_keccak256(zeroPad(retryable-ticket-id), 1)                         |
+| Txn 类型 | 描述                                          | 状态                                                        | Tx ID                                                                  |
+| ------ | ------------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------- |
+| 可重试的票  | 位于重试缓冲区中的准事务，有一个可以执行的期限，即 "赎回"              | 包含消息时发出；如果用户提供足够的 ETH 来支付基本费用 + callvalue，则成功，否则失败。       | _keccak256(zeroPad(l2ChainId), zeroPad(BitFlipedinboxSequenceNumber))_ |
+| 赎回 Txn | 可重试的票据被成功赎回时；看起来像正常的L2交易。                   | 用户启动或通过自动兑换，成功兑换可重试票证后发出。                                 | _keccak256(zeroPad(retryable-ticket-id), 0)_                           |
+| 自动兑换记录 | 准交易 ArbOS 会自动创建，收到 ArbGas 提交时，立即尝试兑换可重试的票证。 | 尝试 / 发出 iff gas*gas-price > 0。 如果失败，可重试票证将保留在重试缓冲区中，继续等待。 | \_keccak256(zeroPad(retryable-ticket-id), 1)                         |
 
-### Retryable Tickets Contract API
+### 可重试票合约 API
 
-A retryable ticket is created by calling [Inbox.createRetryableTicket](./sol_contract_docs/md_docs/arb-bridge-eth/bridge/Inbox.md). Other operations involving retryable tickets are preformed via the [ArbRetryableTicket](./sol_contract_docs/md_docs/arb-os/arbos/builtin/ArbRetryableTx.md) precompile interface at L2 address 0x000000000000000000000000000000000000006E. (This contract won't need to be used under normal circumstances.)
+通过调用Inbox.createRetryableTicket创建可重试票证 其他涉及可重试票据的操作是通过L2地址0x000000000000000000000000000000000000006E的ArbRetryableTicket预编译接口进行的。 (在正常情况下无需使用此合同)
 
-### Parameters:
+### 参数：
 
-There are a total of 10 parameters that the L1 must pass to the L2 when creating a retryable ticket.
+在创建可重试票证时，L1 必须将总共 10 个参数，传递给 L2。
 
-5 of them have to do with allocating ETH/Gas:
+其中 5 个与分配的 ETH/Gas 有关：
 
-- **DepositValue:** Total ETH deposited from L1 to L2.
-- **CallValue:** Call-value for L2 transaction.
-- **GasPrice:** L2 Gas price bid for immediate L2 execution attempt (queryable via standard eth\*gasPrice RPC)
+- DepositValue（存款价值）：从L1到L2存入的ETH总量
+- CallValue（呼叫值）：L2交易的调用值。
+- GasPrice（Gas 价格）：用 L2 Gas 标准价格出价，将会立即执行（可通过标准的eth\*gasPrice RPC查询）。
 - **MaxGas:** Gas limit for immediate L2 execution attempt (can be estimated via \_NodeInterface.estimateRetryableTicket\*)
 - **MaxSubmissionCost:** Amount of ETH allocated to pay for the base submission fee. The base submission fee is a parameter unique to retryable transactions; the user is charged the base submission fee to cover the storage costs of keeping their ticket’s calldata in the retry buffer. (current base submission fee is queryable via `ArbRetryableTx.getSubmissionPrice`)
 
