@@ -17,11 +17,11 @@ function sendL2Message(address chain, bytes calldata messageData) external;
 
 不过，Arbitrum协议也支持在L1和L2之间传递信息。
 
-最常见的跨链通信目的是充值和提现；不过这只是Arbitrum支持的通用型跨链合约调用中的特定一种 This page covers the generalized protocol; for further explanation, see [Inside Arbitrum: Bridging](Inside_Arbitrum.md#bridging).
+最常见的跨链通信目的是充值和提现；不过这只是Arbitrum支持的通用型跨链合约调用中的特定一种 本章节描述了这些通用协议；深入解释，请见洞悉Arbitrum: 桥接。
 
-## Ethereum to Arbitrum: Retryable Tickets
+## 以太坊到Arbitrum：Retryable Tickets（可重试票据）
 
-Retryable tickets are the Arbitrum protocol’s canonical method for passing generalized messages from Ethereum to Arbitrum. A retryable ticket is an L2 message encoded and delivered by L1; if gas is provided, it will be executed immediately. If no gas is provided or the execution reverts, it will be placed in the L2 retry buffer, where any user can re-execute for some fixed period (roughly one week).
+Arbitrum为以太坊到Arbitrum通信提供了几种方式；不过对L1到L2的通信我们一般只推荐retryable tickets，可重试票据。 A retryable ticket is an L2 message encoded and delivered by L1; if gas is provided, it will be executed immediately. If no gas is provided or the execution reverts, it will be placed in the L2 retry buffer, where any user can re-execute for some fixed period (roughly one week).
 
 ### Motivation
 
