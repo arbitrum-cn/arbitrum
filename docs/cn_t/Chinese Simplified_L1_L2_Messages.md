@@ -4,20 +4,20 @@ title: Messaging Between Layers
 sidebar_label: Messaging Between Layers
 ---
 
-## Standard Arbitrum Transactions: Calls from clients
+## 标准Arbitrum交易：来自客户端的调用
 
-Standard, client-generated transaction calls on the Arbitrum chain are sent through the EthBridge using Inbox.sendL2Message:
+Arbitrum上标准的客户端调用的交易是通过EthBridge中Inbox.sendL2Message来实现的
 
 ```solidity
 function sendL2Message(address chain, bytes calldata messageData) external;
 
 ```
 
-Generally calls will come in batches from an aggregator as described in [Transaction Lifecycle](Tx_Lifecycle.md).
+正如在[Tx call生命周期] （../7_杂项/3_Tx call生命周期.md）中描述的那样，通常大部分调用都会走聚合器并被批量处理。
 
-However, the Arbitrum protocol also offers ways of passing messages between the layer 1 and layer 2 chains.
+不过，Arbitrum协议也支持在L1和L2之间传递信息。
 
-The most common use-case for direct inter-chain communication is depositing and withdrawing assets; this, however, is only one specific application of generalized cross-chain contract calls that Arbitrum supports. This page covers the generalized protocol; for further explanation, see [Inside Arbitrum: Bridging](Inside_Arbitrum.md#bridging).
+最常见的跨链通信目的是充值和提现；不过这只是Arbitrum支持的通用型跨链合约调用中的特定一种 This page covers the generalized protocol; for further explanation, see [Inside Arbitrum: Bridging](Inside_Arbitrum.md#bridging).
 
 ## Ethereum to Arbitrum: Retryable Tickets
 
