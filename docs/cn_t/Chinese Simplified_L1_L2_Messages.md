@@ -1,7 +1,7 @@
 ---
-id: L1_L2_Messages
-title: Messaging Between Layers
-sidebar_label: Messaging Between Layers
+id: L1_L2_层之间的通信
+title: 层之间消息传递
+sidebar_label: 层之间消息传递
 ---
 
 ## 标准Arbitrum交易：来自客户端的调用
@@ -21,27 +21,27 @@ function sendL2Message(address chain, bytes calldata messageData) external;
 
 ## 以太坊到Arbitrum：Retryable Tickets（可重试票据）
 
-Arbitrum为以太坊到Arbitrum通信提供了几种方式；不过对L1到L2的通信我们一般只推荐retryable tickets，可重试票据。 A retryable ticket is an L2 message encoded and delivered by L1; if gas is provided, it will be executed immediately. If no gas is provided or the execution reverts, it will be placed in the L2 retry buffer, where any user can re-execute for some fixed period (roughly one week).
+可重试票据是 Arbitrum 协议的规范方法，此方法将通用消息从以太坊传递到 Arbitrum 可重试票据工作机理如下：一条L1交易提交到了收件箱中，其内容为向L2进行一笔转账（包含了calldata，callvalue，以及gas info）如果有提供任意数量的gas，L2上的交易会自动执行。在乐观的/正常的情况下，L2上的交易会立即成功。 如果该交易第一次没有执行成功，在L2上会进入一个『retry buffer重试缓存』。这意味着在一段时间内（与该链的挑战期有关，大约为一周），任何人都可以通过再次执行来尝试赎回该L2交易票据。
 
-### Motivation
+### 动机
 
-Retryable tickets are designed to gracefully handle various potentially tricky aspects of cross-chain messaging:
+可重试票据的设计是为了完美地处理跨链消息传递中各种潜在的棘手问题。
 
-- **Overpaying for L2 Gas:** An L1 contract has to supply gas for the L2 transaction’s execution; if the L1 side overpays, this begets the questions of what to do with this excess Ether.
+- 多付 L2 Gas费用： L1 合约必须为 L2 交易的执行提供 Gas 费用；如果 L1 一方多付了 Gas 费用，这就会引发如何处理多余的 ETH 费用问题。
 
-- **L2 transaction reversion — breaking atomicity:** It is vital for many use-cases of L1 to L2 transactions that the state updates on both layers are atomic, i.e., if the L1 side succeeds, there is assurance that the L2 will eventually succeed as well. The canonical example here is a token deposit: on L1, tokens are escrowed in some contract, and a message is sent to L2 to mint some corresponding tokens. If the L1 side succeeds and the L2 reverts, the user has simply lost their tokens (i.e., donated them to the bridge contract).
+- L2交易的恢复--打破原子性。对于许多L1到L2交易的用例来说，两层的状态更新都是原子性的，也就是说，如果L1端成功了，就能保证L2最终也会成功。 这里的典型例子是代币存款：在L1，代币被托管在一些合同中，并向L2发送一个消息以铸造一些相应的代币。 如果L1端成功了，而L2端被恢复了，那么用户只能失去他们的代币（也就是把代币捐给了桥梁合约）。
 
-- **L2 transaction reversion — handling L2 callvalue:** The L1 side must supply the Ether for the callvalue of the L2 transaction (by depositing it); if the L2 transaction reverts, this begets the questions of what to do with this in-limbo Ether.
+- L2交易还原--处理L2 callvalue。L1方必须为L2交易的callvalue提供以太币（通过存款）；如果L2交易被恢复，这就产生了如何处理这个亏损的以太币的问题。
 
-Retryable tickets handle all these things (and handle them well!)
+以上发生的所有问题，可重试票可以非常完美地处理！
 
-### Transaction Types / Terminology
+### 交易类型/术语
 
-| Txn Type           | Description                                                                                                                                           | Appearance                                                                                                                     | Tx ID                                                                  |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| Retryable Ticket   | Quasi-transaction that sits in the retry buffer and has a lifetime over which it can be executed, i.e., “redeemed.”                                   | Emitted when message is included; will succeed if user supplies sufficient ETH to cover base-fee + callvalue, otherwise fails. | _keccak256(zeroPad(l2ChainId), zeroPad(bitFlipedinboxSequenceNumber))_ |
-| Redemption Txn     | Transaction that results a retryable ticket being successfully redeemed; looks like a normal L2 transaction.                                          | Emitted after a retryable ticket is successfully redeemed, either user-initiated or via an auto-redeem.                        | _keccak256(zeroPad(retryable-ticket-id), 0)_                           |
-| Auto-Redeem Record | Quasi-transaction ArbOS creates automatically which attempts to redeem a retryable ticket immediately when it is submitted using the ArbGas provided. | Attempted / emitted iff gas\*gas-price > 0. If it fails, retryable ticket stays in the retry buffer.                         | \_keccak256(zeroPad(retryable-ticket-id), 1)                         |
+| Txn 类型 | 描述                                                                                                                                                    | 状态                                                                                                     | Tx ID                                                                  |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| 可重试的票  | 位于重试缓冲区中的准事务，有一个可以执行的期限，即 "赎回"                                                                                                                        | 包含消息时发出；如果用户提供足够的 ETH 来支付基本费用 + callvalue，则成功，否则失败。                                                    | _keccak256(zeroPad(l2ChainId), zeroPad(BitFlipedinboxSequenceNumber))_ |
+| 赎回 Txn | 可重试的票据被成功赎回时；看起来像正常的L2交易。                                                                                                                             | 用户启动或通过自动兑换，成功兑换可重试票证后发出。                                                                              | _keccak256(zeroPad(retryable-ticket-id), 0)_                           |
+| 自动兑换记录 | Quasi-transaction ArbOS creates automatically which attempts to redeem a retryable ticket immediately when it is submitted using the ArbGas provided. | Attempted / emitted iff gas\*gas-price > 0. If it fails, retryable ticket stays in the retry buffer. | \_keccak256(zeroPad(retryable-ticket-id), 1)                         |
 
 ### Retryable Tickets Contract API
 
