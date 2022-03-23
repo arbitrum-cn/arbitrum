@@ -65,7 +65,7 @@ function sendL2Message(address chain, bytes calldata messageData) external;
 
 - 目的地址：在 L2 上发起交易的地址。
 - 返还地址： L2 上所有多余的 gas 地址；即，用于基础提交成本后，多余 ETH (MaxSubmissionCost - ActualSubmissionCostPaid)和为 L2 执行提供的多余 ETH (GasPrice x MaxGas) -ActualETHSpentInExecution)。
-- 受益人：如果可重试票证超时或被取消，CallValue 将记入 L2 的地址。 The Beneficiary is also the address with the right to cancel a Retryable Ticket (if the ticket hasn’t been redeemed yet). `Calldata:` data encoding the L2 contract call. `Calldata Size:` CallData size.
+- 受益人：如果可重试票证超时或被取消，CallValue 将记入 L2 的地址。 受益人也有权取消可重试票的地址(如果票尚未兑换)。 Calldata: 编码 L2 合约调用的数据。 Calldata Size: 呼叫数据大小。
 
 ### Important Note About Base Submission Fee
 
