@@ -35,12 +35,12 @@ Arbitrum是以太坊的L2扩容方案，它拥有独特的特性集：
 - Arbitrum如何确保链状态和输出是正确的？
 - 以太坊用户、合约如何与Arbitrum互动？
 - Arbitrum是如何支持兼容以太坊的合约与转账的？
-- How are ETH and tokens transferred into and out of Arbitrum chains, and how are they managed while on the chain?
-- How can I run my own Arbitrum node or validator?
+- 以太坊币和代币是如何转入转出Arbitrum链的？在Arbitrum链上是如何对其进行管理的？
+- 如何运行我自己的Arbitrum节点或成为一个验证者？
 
-## Optimistic Rollup
+## 乐观式Rollup
 
-Arbitrum is an optimistic rollup. Let’s unpack that term.
+Arbitrum是一种乐观式Rollup。 我们来解读一下这个词汇。
 
 _Rollup_
 
