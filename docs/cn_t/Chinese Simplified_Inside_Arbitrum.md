@@ -25,16 +25,16 @@ Arbitrum是以太坊的L2扩容方案，它拥有独特的特性集：
 
 用户与合约将信息发送至收件箱。 链将各条信息逐一读取并依次执行。 将链的状态更新并产生一些输出。
 
-If you want an Arbitrum chain to process a transaction for you, you need to put that transaction into the chain’s inbox. Then the chain will see your transaction, execute it, and produce some outputs: a transaction receipt, and any withdrawals that your transaction did.
+若想要Arbitrum链为你执行一笔交易，你需要把该笔交易提交到收件箱中。 随后Arbitrum链会发现这笔交易，然后执行，并产生输出：一笔交易的记录，以及交易所中的任何提款等内容。
 
-Execution is deterministic -- which means that the chain’s behavior is uniquely determined by the contents of its inbox. Because of this, the result of your transaction is knowable as soon as your transaction has been put in the inbox. Any Arbitrum node will be able to tell you the result. (And you can run an Arbitrum node yourself if you want.)
+交易执行是确定的——这意味着链的状态仅取决于收件箱。 因此，交易的结果在你讲交易提交到收件箱的那一刻就已经是确定的了。 任何一个Arbitrum节点都能告知你结果。 （如果你喜欢也可以自己运行一个节点。）
 
-All of the technical detail in this document is connected to this diagram. To get from this diagram to a full description of Arbitrum, we’ll need to answer questions like these:
+本文档中的所有的技术细节都与这个模型有关。 从此模型谈起直到Arbitrum的完整论述，我们需要回答如下问题：
 
-- Who keeps track of the inbox, chain state, and outputs?
-- How does Arbitrum make sure that the chain state and outputs are correct?
-- How can Ethereum users and contracts interact with Arbitrum?
-- How does Arbitrum support Ethereum-compatible contracts and transactions?
+- 谁负责追踪收件箱、链状态、输出？
+- Arbitrum如何确保链状态和输出是正确的？
+- 以太坊用户、合约如何与Arbitrum互动？
+- Arbitrum是如何支持兼容以太坊的合约与转账的？
 - How are ETH and tokens transferred into and out of Arbitrum chains, and how are they managed while on the chain?
 - How can I run my own Arbitrum node or validator?
 
