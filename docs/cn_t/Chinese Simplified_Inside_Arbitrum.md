@@ -4,26 +4,26 @@ title: Inside Arbitrum
 sidebar_label: Inside Arbitrum
 ---
 
-本文是对 Arbitrum 的设计及其原理的深入解析。 本文不是 API 文档，也不是代码开发教程，如有需要请查看其余文章。 “Inside Arbitrum”适合于想要了解 Arbitrum 设计的兴趣者。
+本章节是对 Arbitrum 的设计及其原理的深入解析。 本文不是 API 文档，也不是代码开发教程，如有需要请查看其余文章。 “Inside Arbitrum”适合于想要了解 Arbitrum 设计的兴趣者。
 
-## Why use Arbitrum?
+## 为什么使用Arbitrum?
 
-Arbitrum is an L2 scaling solution for Ethereum, offering a unique combination of benefits:
+Arbitrum是以太坊的L2扩容方案，它拥有独特的特性集：
 
-- Trustless security: security rooted in Ethereum, with any one party able to ensure correct Layer 2 results
-- Compatibility with Ethereum: able to run unmodified EVM contracts and unmodified Ethereum transactions
-- Scalability: moving contracts’ computation and storage off of the main Ethereum chain, allowing much higher throughput
-- Minimum cost: designed and engineered to minimize the L1 gas footprint of the system, minimizing per-transaction cost.
+- 无需信任的安全性：安全扎根于以太坊，任何人都可以确保正确的L2结果
+- 以太坊兼容性：所有EVM标准的合约和转账都可以在Arbitrum上执行
+- 可扩展性：将以太坊的计算和存储转移至链下，吞吐量更高
+- 最低成本：为最小化以太坊L1燃气成本而生，降低每笔交易的成本
 
-Some other Layer 2 systems provide some of these features, but to our knowledge no other system offers the same combination of features at the same cost.
+其余的L2方案也提供了其中一部分特性，但据我们所了解的，并没有一种方案能在相同成本下提供同样的特性集。
 
-## The Big Picture
+## 高屋建瓴
 
-At the most basic level, an Arbitrum chain works like this:
+在最基础层，Arbitrum链工作方式如图：
 
 ![img](https://lh4.googleusercontent.com/qwf_aYyB1AfX9s-_PQysOmPNtWB164_qA6isj3NhkDnmcro6J75f6MC2_AjlN60lpSkSw6DtZwNfrt13F3E_G8jdvjeWHX8EophDA2oUM0mEpPVeTlMbsjUCMmztEM0WvDpyWZ6R)
 
-People and contracts put messages into the inbox. The chain reads the messages one at a time, and processes each one. This updates the state of the chain and produces some outputs.
+用户与合约将信息发送至收件箱。 链将各条信息逐一读取并依次执行。 将链的状态更新并产生一些输出。
 
 If you want an Arbitrum chain to process a transaction for you, you need to put that transaction into the chain’s inbox. Then the chain will see your transaction, execute it, and produce some outputs: a transaction receipt, and any withdrawals that your transaction did.
 
