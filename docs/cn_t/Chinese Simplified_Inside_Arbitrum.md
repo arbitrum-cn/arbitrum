@@ -122,41 +122,41 @@ ArbOS之上的水平层叫做EVM兼容层，因为ArbOS为智能合约提供了�
 
 最后但同样重要的是，我们在左上角看到 **用户**。 用户使用钱包、dapp 或其他工具与 Arbitrum 进行交互。 由于 Arbitrum 节点支持与以太坊相同的 API，因此用户不需要全新的工具，开发人员也不需要重写他们的 dapp。
 
-## Above or Below the Line?
+## 在线上方还是下方？
 
-We often say that the key dividing line in the Arbitrum architecture is the AVM interface which divides Layer 1 from Layer 2. It can be useful to think about whether a particular activity is below the line or above the line.
+我们常说，在Arbitrum架构中分割L1和L2的是位于AVM的这条线。 这种分层有利于界定某些行为发生的地点。
 
 ![img](https://lh5.googleusercontent.com/1qwGMCrLQjJMv9zhWIUYkQXoDR2IksU5IzcSUPNJ5pWkY81pCvr7WkTf4-sb41cVohcnL-i6y8M1LU8v-4RXT_fdOsaMuLXnjwerSuKTQdHE-Hrvf4qBhRQ2r7qjxuAi3mk3hgkh)
 
-Below the line functions are concerned with ensuring that the AVM, and therefore the chain, executes correctly. Above the line functions assume that the AVM will execute correctly, and focus on interacting with the software running at Layer 2.
+线下方，是用来确保AVM以及链的执行的正确性的。 而线上方则假设AVM会正确运行，专注于与运行在L2上的软件的互动。
 
-As an example, Arbitrum validators operate below the line, because they participate in the rollup protocol, which is managed below-the-line by the EthBridge, to ensure that correct execution of the AVM is confirmed.
+例如，Arbitrum验证者在下方工作，因为他们参与由线下方EthBridge管理的rollup协议，来确保AVM的运转是正常的。
 
-On the other hand, Arbitrum full nodes operate above the line, because they run a copy of the AVM locally, and assume that below-the-line mechanisms will ensure that the same result that they compute locally will eventually be confirmed by below-the-line mechanisms that they don’t monitor.
+另一边，Arbitrum全节点工作在线上方，它们每个节点在本地都有一份AVM状态的副本，并假设线下方的工作机制能够保证每个人本地的运算最终都相同。它们并不监视下方是如何工作的。
 
-Most users, most of the time, will be thinking in above the line terms. They will be interacting with an Arbitrum chain as just another chain, without worrying about the below-the-line details that ensure that the chain won’t go wrong.
+大部分用户在大部分场景下，只关心线上方的事。 与Arbitrum互动与其他链互动是相同的，不需要考虑线下方如何确保链工作正常。
 
 ## The EthBridge
 
-The EthBridge is a set of Ethereum contracts that manage an Arbitrum chain. The EthBridge keeps track of the chain’s inbox contents, the hash of the chain’s state, and information about the outputs. The EthBridge is the ultimate source of authority about what is going on in the Arbitrum chain.
+EthBridge是管理Arbitrum链的一组合约。 EthBridge会记录收件箱的内容，链状态的哈希，以及输出信息。 EthBridge是Arbitrum链上发生了什么的终极权威消息源。
 
-The EthBridge is the foundation that Arbitrum’s security is built on. The EthBridge runs on Ethereum, so it is transparent and executes trustlessly.
+EthBridge是Arbitrum安全的基石。 它运行于以太坊上，所以是公开透明且无需信任的。
 
-The _Inbox_ contract manages the chain’s inbox. Inbox keeps track of the (hash of) every message in the inbox. Calling one of the send\* methods of Inbox will insert a message into the Arbitrum chain’s inbox.
+收件箱合约则管理着收件箱。 收件箱记录了每条消息的哈希。 调用一个send*函数会向Arbitrum的收件箱发送一条信息。
 
-The Inbox contract makes sure that certain information in incoming messages is accurate: that the sender is correctly recorded, and that the Ethereum block number and timestamp are correctly recorded in the message.
+收件箱合约确保进入的信息是准确无误的：信息需要正确记录发送人，以太坊区块编号，时间戳。
 
-Unsurprisingly, there is also an _Outbox_ contract, which manages outputs of the chain; i.e., messages originating from Arbitrum about something that should (eventually) happen back on Ethereum (notably, withdrawals). When a rollup block is confirmed, the outputs produced in that rollup block are put into the outbox. How outputs end up being reflected on Ethereum is detailed in the [Bridging](#bridging) section.
+理所当然地，还有一个发件箱合约，管理着链的输出。例如，在Arbitrum上发生的需要（最终会）返回在以太坊上的事（比如提现）。 当一个rollup区块确认后，该区块的输出就放入了收件箱内。 [桥接](#bridging)部分详细介绍了输出最终如何反映在以太坊上。
 
-The Rollup contract and its friends are responsible for managing the rollup protocol. They track the state of the Arbitrum chain: the rollup blocks that have been proposed, accepted, and/or rejected, and who has staked on which rollup nodes. The Challenge contract and its friends are responsible for tracking and resolving any disputes between validators about which rollup blocks are correct. The functionality of Rollup, Challenge, and their friends will be detailed below in the Rollup Protocol section.
+Rollup合约及其伙伴管理着整个rollup合约。 它们共同追踪Arbitrum链的状态：提出的，接受的，被拒绝的rollup区块以及在哪个rollup结点上谁进行了质押。 Challenge挑战合约及其伙伴则负责解决验证者之间的哪个rollup区块是正确的的争端。 Rollup，Challenge和它们的朋友们会在Rollup协议章节中详细介绍。
 
-## Arbitrum Rollup Protocol
+## Arbitrum Rollup协议
 
-Before diving into the rollup protocol, there are two things we need to cover.
+在深入理解rollup协议之前，有两件事需要明确。
 
-First, _if you’re an Arbitrum user or developer, you don’t need to understand the rollup protocol_. You don’t ever need to think about it, unless you want to. Your relationship with it can be like a train passenger’s relationship with the train’s engine: you know it exists, you rely on it to keep working, but you don’t spend your time monitoring it or studying its internals.
+首先，_如果你是Arbitrum的用户或开发者，你不需要理解rollup协议。_ 除非你认为有必要，否则你都不需要对其进行思考。 这就像火车乘客与火车引擎一样：乘客知道引擎的存在，只需要引擎正常工作即可，但并不需要花费时间监控它或学习其内部结构。
 
-You’re welcome to study, observe, and even participate in the rollup protocol, but you don’t need to, and most people won’t. So if you’re a typical train passenger who just wants to read or talk to your neighbor, you can skip right to the [next section](#validators) of this document. If not, read on!
+我们欢迎大家来学习，观察，甚至参与到rollup协议中，不过对大部分人来说这并非必要的。 如果你只是一位传统的火车乘客，可以直接跳到[验证者章节](#validators)。 如果不是则请继续阅读。
 
 The second thing to understand about the rollup protocol is that *the protocol doesn’t decide the results of transactions, it only confirms the results*. The results are uniquely determined by the sequence of messages in the chain’s inbox. So once your transaction message is in the chain’s inbox, its result is knowable--and Arbitrum nodes will report that your transaction is done. The role of the rollup protocol is to confirm transaction results that, as far as Arbitrum users are concerned, have already occurred. (This is why Arbitrum users can effectively ignore the rollup protocol.)
 
