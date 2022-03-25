@@ -44,9 +44,9 @@ Arbitrum是一种乐观式Rollup。 我们来解读一下这个词汇。
 
 _Rollup_
 
-Arbitrum is a rollup, which means that the inputs to the chain -- the messages that are put into the inbox -- are all recorded on the Ethereum chain as calldata. Because of this, everyone has the information they would need to determine the current correct state of the chain -- they have the full history of the inbox, and the results are uniquely determined by the inbox history, so they can reconstruct the state of the chain based only on public information, if needed.
+仲裁是一个渐进过程。 这意味着输入链的信息——输入收件箱的信息——都作为通话数据记录在以太坊链上。 正因为如此，所有人都有确定链当前正确状态所需的信息——他们拥有收件箱的全部历史，且收件箱历史独特地决定了结果， 如果需要，它们只能在公共信息基础上重建这一链的状态。
 
-This also allows anyone to be a full participant in the Arbitrum protocol, to run an Arbitrum node or participate as a validator. Nothing about the history or state of the chain is a secret.
+这也使得任何人都能够充分参与Arbitrum议定书，运行一个Arbitrum中心或作为一个验证者参加。 任何关于Arbitrum链历史或状态的信息都不是秘密。
 
 _Optimistic_
 
