@@ -160,28 +160,28 @@ Rollup合约及其伙伴管理着整个rollup合约。 它们共同追踪Arbitru
 
 其次，需要指出，*rollup协议并不决定交易的结果，它只对结果进行确认*。 结果是由收件箱中信息的顺序确定的。 所以，一旦消息进入了收件箱，其结果就是确定的——Arbitrum节点会将待完成的交易提交。 就Arbitrum用户而言Rollup协议的作用是用来确认这些结果。 （这也是为什么Arbitrum用户可以不关心rollup协议。）
 
-您可能想知道我们为什么需要rollup协议。 如果每个人都知道交易的结果，为什么还要rollup协议确认呢？ 两个原因。 First, somebody might lie about a result, and we need a definitive, trustless way to tell who is lying. Second, Ethereum doesn’t know the results. The whole point of a Layer 2 scaling system is to run transactions without Ethereum needing to do all of the work--and indeed Arbitrum can go fast enough that Ethereum couldn’t hope to monitor every Arbitrum transaction. But once a result is confirmed, Ethereum knows about it and can rely on it.
+您可能想知道我们为什么需要rollup协议。 如果每个人都知道交易的结果，为什么还要rollup协议确认呢？ 两个原因。 首先，有人可能会撒谎、作弊，所以需要一个权威的、无需信任的方式来分辨谁是恶意的。 第二，以太坊并不知道这些结果。 而L2扩容的核心要义就是以太坊不需要承担交易的所有工作量，Arbitrum交易速度非常快，以太坊是没有能力去监控每一笔Arbitrum交易的。 但一旦结果确认了，以太坊就知晓了，结果就是可信赖的。
 
-With those preliminaries behind us, let’s jump into the details of the rollup protocol.
+有了这些铺垫，我们就可以深入rollup协议的细节了。
 
-The parties who participate in the protocol are called _validators_. Anyone can be a validator. Some validators will choose to be stakers--they will place an ETH deposit which they’ll be able to recover if they’re not caught cheating. These roles are permissionless: anyone can be a validator or a staker.
+参与rollup协议的人成为_验证者_， 任何人都可以成为验证者。 有些验证者则会选择成为质押者——将以太质押进来，如果作弊将被罚没。 这些都做都是免许可的：任何人都可以成为验证者或质押者。
 
-The key security property of the rollup protocol is the _AnyTrust Guarantee_, which says that any one honest validator can force the correct execution of the chain to be confirmed. This means that execution of an Arbitrum chain is as trustless as Ethereum. You, and you alone (or someone you hire) can force your transactions to be processed correctly. And that is true no matter how many malicious people are trying to stop you.
+Rollup协议的核心安全属性是_AnyTrust Guarantee_（“一诚则成”原理）：只要有一个诚实的验证者，那么整个链的正确运行就会有绝对的保证。 这意味着Arbitrum链的运行是与以太坊一样免信任的。 You, and you alone (or someone you hire) can force your transactions to be processed correctly. And that is true no matter how many malicious people are trying to stop you.
 
-### The Rollup Chain
+### Rollup链
 
-The rollup protocol tracks a chain of rollup blocks. These are separate from Ethereum blocks. You can think of the rollup blocks as forming a separate chain, which the Arbitrum rollup protocol manages and oversees.
+Rollup协议记录了一条rollup区块的链条。 它们与以太坊区块并不是同一个概念。 你可以认为rollup链是一条概念上的单独的链，是由Arbitrum rollup协议管理并监控的。
 
-Validators can propose rollup blocks. New rollup blocks will be _unresolved_ at first. Eventually every rollup block will be _resolved_, by being either _confirmed_ or _rejected_. The confirmed blocks make up the confirmed history of the chain.
+验证者可以提出rollup区块。 新的rollup区块一开始是_待决状态_。 最终每个rollup区块都会被_解决_，要么被_确认_，要么被_拒绝_。 已确认的区块构成了整条链的历史。
 
-Each rollup block contains:
+每个rollup区块包含：
 
-- the rollup block number
-- the predecessor block number: rollup block number of the last block before this one that is (claimed to be) correct
-- the amount of computation the chain has done in its history (measured in ArbGas)
-- the number of inbox messages have been consumed in the chain’s history
-- a hash of the outputs produced over the chain’s history
-- a hash of the AVM state.
+- rollup区块编号
+- 父rollup区块编号：本rollup区块之前一个（被宣称为）正确的rollup区块的编号
+- 本链历史上所发生的运算量（以ArbGas计量）
+- 本链历史上所接收的收件箱信息数量
+- 对本链历史输出的哈希
+- AVM 状态的哈希值。
 
 Except for the rollup block number, the contents of the block are all just claims by the block’s proposer. Arbitrum doesn’t know at first whether any of these fields are correct. If all of these fields are correct, the protocol should eventually confirm the block. If one or more of these fields are incorrect, the protocol should eventually reject the block.
 
