@@ -50,21 +50,21 @@ _Rollup_
 
 _乐观式_
 
-Arbitrum是乐观的，通过验证者发布rollup区块以及任何人都可以对其进行挑战的方式，Arbitrum将链状态不断向前推进。 如果挑战期（大约为一周）结束后仍没有对rollup区块提出挑战，Arbitrum就会将该rollup区块认定为正确的。 如果在挑战期内有人提出挑战，Arbitrum会使用一个高效率的争议解决协议（下述）来判定谁是作恶者。 The liar will forfeit a deposit, and the truth-teller will take part of that deposit as a reward for their efforts (some of the deposit is burned, guaranteeing that the liar is punished even if there's some collusion going on).
+Arbitrum是乐观的，通过验证者发布rollup区块以及任何人都可以对其进行挑战的方式，Arbitrum将链状态不断向前推进。 如果挑战期（大约为一周）结束后仍没有对rollup区块提出挑战，Arbitrum就会将该rollup区块认定为正确的。 如果在挑战期内有人提出挑战，Arbitrum会使用一个高效率的争议解决协议（下述）来判定谁是作恶者。 作恶者的质押资金将被没收，其中一部分将奖励给诚信者（另一部分被销毁，以保证即使有共谋发生作恶者仍会被惩罚）。
 
-Because a party who tries to cheat will lose a deposit, attempts to cheat should be very rare, and the normal case will be a single party posting a correct rollup block, and nobody challenging it.
+因为试图作弊的一方会损失押金，所以作弊地尝试应该是非常罕见的，正常情况下是验证者发布正确的rollup区块，没有人去质疑它。
 
-## Interactive Proving
+## 交互式证明
 
-Among optimistic rollups, the most important design decision is how to resolve disputes. Suppose Alice claims that the chain will produce a certain result, and Bob disagrees. How will the protocol decide which version to accept?
+在乐观式rollup中，最重要的设计是如何解决争议。 假设Alice断言链上会产生某个特定结果，而Bob不认同。 那么仲裁协议应该接受谁的提议呢？
 
-There are basically two choices: interactive proving, or re-executing transactions. Arbitrum uses interactive proving, which we believe is more efficient and more flexible. Much of the design of Arbitrum follows from this fact.
+基本上，有两种方案：交互式证明、再执行交易。 Arbitrum使用交互式证明，我们相信这种方式是更有效率更灵活的。 大部分Arbitrum的设计都遵循此观点。
 
-### Interactive proving
+### 交互式证明
 
-The idea of interactive proving is that Alice and Bob will engage in a back-and-forth protocol, refereed by an L1 contract, to resolve their dispute with minimal work required from any L1 contract.
+在交互式证明的范式中，Alice和Bob会在一个往返驳诘式的协议中进行交互，以最大限度减少L1上仲裁人所需要的工作量。
 
-Arbitrum's approach is based on dissection of the dispute. If Alice's claim covers N steps of execution, she posts two claims of size N/2 which combine to yield her initial N-step claim, then Bob picks one of Alice's N/2-step claims to challenge. Now the size of the dispute has been cut in half. This process continues, cutting the dispute in half at each stage, until they are disagreeing about a single step of execution. Note that so far the L1 referee hasn't had to think about execution "on the merits". It is only once the dispute is narrowed down to a single step that the L1 referee needs to resolve the dispute by looking at what the instruction actually does and whether Alice's claim about it is correct.
+Arbitrum的解决方案是基于争议的分解。 如果Alice的断言包含的行为有N步，Alice会将其分解为两个N/2长度的断言，Bob则需要选择N/2步长度的断言来挑战。 现在争议的规模减半。 This process continues, cutting the dispute in half at each stage, until they are disagreeing about a single step of execution. Note that so far the L1 referee hasn't had to think about execution "on the merits". It is only once the dispute is narrowed down to a single step that the L1 referee needs to resolve the dispute by looking at what the instruction actually does and whether Alice's claim about it is correct.
 
 The key principle behind interactive proving is that if Alice and Bob are in a dispute, Alice and Bob should do as much off-chain work as possible needed to resolve their dispute, rather than putting that work onto an L1 contract.
 
