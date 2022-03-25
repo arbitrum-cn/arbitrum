@@ -158,9 +158,9 @@ Rollup合约及其伙伴管理着整个rollup合约。 它们共同追踪Arbitru
 
 我们欢迎大家来学习，观察，甚至参与到rollup协议中，不过对大部分人来说这并非必要的。 如果你只是一位传统的火车乘客，可以直接跳到[验证者章节](#validators)。 如果不是则请继续阅读。
 
-The second thing to understand about the rollup protocol is that *the protocol doesn’t decide the results of transactions, it only confirms the results*. The results are uniquely determined by the sequence of messages in the chain’s inbox. So once your transaction message is in the chain’s inbox, its result is knowable--and Arbitrum nodes will report that your transaction is done. The role of the rollup protocol is to confirm transaction results that, as far as Arbitrum users are concerned, have already occurred. (This is why Arbitrum users can effectively ignore the rollup protocol.)
+其次，需要指出，*rollup协议并不决定交易的结果，它只对结果进行确认*。 结果是由收件箱中信息的顺序确定的。 所以，一旦消息进入了收件箱，其结果就是确定的——Arbitrum节点会将待完成的交易提交。 就Arbitrum用户而言Rollup协议的作用是用来确认这些结果。 （这也是为什么Arbitrum用户可以不关心rollup协议。）
 
-You might wonder why we need the rollup protocol. If everyone knows the results of transactions already, why bother confirming them? The protocol exists for two reasons. First, somebody might lie about a result, and we need a definitive, trustless way to tell who is lying. Second, Ethereum doesn’t know the results. The whole point of a Layer 2 scaling system is to run transactions without Ethereum needing to do all of the work--and indeed Arbitrum can go fast enough that Ethereum couldn’t hope to monitor every Arbitrum transaction. But once a result is confirmed, Ethereum knows about it and can rely on it.
+您可能想知道我们为什么需要rollup协议。 如果每个人都知道交易的结果，为什么还要rollup协议确认呢？ 两个原因。 First, somebody might lie about a result, and we need a definitive, trustless way to tell who is lying. Second, Ethereum doesn’t know the results. The whole point of a Layer 2 scaling system is to run transactions without Ethereum needing to do all of the work--and indeed Arbitrum can go fast enough that Ethereum couldn’t hope to monitor every Arbitrum transaction. But once a result is confirmed, Ethereum knows about it and can rely on it.
 
 With those preliminaries behind us, let’s jump into the details of the rollup protocol.
 
