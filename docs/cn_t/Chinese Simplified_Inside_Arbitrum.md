@@ -82,45 +82,45 @@ Arbitrum的解决方案是基于争议的分解。 如果Alice的断言包含的
 
 *每笔交易更高的gas limit：*交互式证明可以摆脱以太坊每笔交易的比较紧张的gas limit；一笔需要花费大量gas的交易在以太坊上无法实现，但在Arbitrum上却是有可能的。 显然，gas limit不可能是无限的，但还是可以比以太坊上大很多。 考虑到以太坊的话，在Arbitrum上高gas交易的尾翼缺点是，可能需要稍多一点的交互式证明步骤（而且还是在存在欺诈的情况下）。 而对于再执行交易范式，其gas limit必须低于以太坊，因为那样才有可能对在单笔以太坊交易中对其包含的所有交易的执行进行检查（比直接执行交易更贵）。
 
-**No limit on contract size**: Interactive proving does not need to create an Ethereum contract for each L2 contract, so it does not need contracts to fit within Ethereum's contract size limit. As far as Arbitrum's dispute contracts are concerned, deploying a contract on L2 is just another bit of computation like any other. By contrast, reexecution approaches must impose a _lower_ contract size limit than Ethereum, because they need to be able to instrument a contract in order to emulate its execution, and the resulting instrumented code must fit into a single Ethereum contract.
+*合约大小不受限制：*交互式证明不需要为每一个L2合约部署一个对应的以太坊合约，所以也不需要遵循以太坊所规定的合约大小限制。 只要有Arbitrum的可仲裁机制，在L2 上部署一个合约就与进行其他计算是一样的。 相反，再执行交易范式需要币以太坊更小的合约大小限制，因为他们需要检验该合约，而能够检验该合约的代码则必须能装进以太坊合约中。
 
-**More implementation flexibility:** Interactive proving allows more flexibility in implementation, for example the ability to add instructions that don't exist in EVM. All that is necessary is the ability to verify a one-step proof on Ethereum. By contrast, reexecution approaches are tethered to limitations of the EVM.
+*更多实现上的灵活性：*交互式证明提供了实现上更多的灵活性。例如，增加EVM中没有的指令。 而这仅需要通过在以太坊上验证一个单步证明即可。 相反，再执行交易范式则要受限于EVM。
 
-### Interactive proving drives the design of Arbitrum
+### 交互式证明驱动着Arbitrum的设计
 
-Much of the design of Arbitrum is driven by the opportunities opened up by interactive proving. If you're reading about some feature of Arbitrum, and you're wondering why it exists, two good questions to ask are: "How does this support interactive proving?" and "How does this take advantage of interactive proving?" The answers to most "why questions" about Arbitrum relate to interactive proving.
+Arbitrum的许多设计都是由交互式证明所带来的可能所驱动的。 如果你看到一些Arbitrum的特性并疑惑为什么会这样，那么请记住两个非常好的问题：“这个特性是怎样支持交互式证明的？”和“它是怎样利用交互式证明的？” 你在Arbitrum中大部分的问题都与交互式证明相关。
 
-## Arbitrum Architecture
+## Arbitrum架构
 
-This diagram shows the basic architecture of Arbitrum.
+下图展示了Arbitrum的基础架构。
 
 ![img](https://lh5.googleusercontent.com/1qwGMCrLQjJMv9zhWIUYkQXoDR2IksU5IzcSUPNJ5pWkY81pCvr7WkTf4-sb41cVohcnL-i6y8M1LU8v-4RXT_fdOsaMuLXnjwerSuKTQdHE-Hrvf4qBhRQ2r7qjxuAi3mk3hgkh)
 
-On the left we have users and the service providers who help them connect to the chain(s) of their choice. On the right we have the Arbitrum system itself, built in layers on top of Ethereum.
+左侧是用户以及用户选择的连接到区块链的服务提供者。 右侧是构建于以太坊之上的Arbitrum系统。
 
-We’ll work our way up on the right side to describe how the Arbitrum stack works, then we’ll talk about what happens on the left side to connect users to it.
+我们先讲一讲右侧的Arbitrum栈是如何工作的，然后再来讲一讲当左边用户连接到它时发生了什么。
 
-On the bottom right is good old **Ethereum**. Arbitrum builds on Ethereum and inherits its security from Ethereum.
+最下面是我们的老朋友以太坊。 Arbitrum构建于以太坊之上并继承了其安全性。
 
-On top of Ethereum is the **EthBridge**, a set of Ethereum contracts that manage an Arbitrum chain. The EthBridge referees the Arbitrum rollup protocol, which ensures that the layers above it operate correctly. (More on the rollup protocol below in the [Rollup Protocol](#arbitrum-rollup-protocol) section.) The EthBridge also maintains the chain’s inbox and outbox, allowing people and contracts to send transaction messages to the chain, and to observe and use the outputs of those transactions. Users, L1 Ethereum contracts, and Arbitrum nodes make calls to the EthBridge contracts to interact with the Arbitrum chain.
+在以太坊之上是ETHBridge，它由管理Arbitrum链的一系列以太坊上的合约组成。 EthBridge仲裁Arbitrum rollup协议，以保证L2运行的正确性。 （更多关于rollup协议请见下方的Rollup协议分区。） EthBridge还维护着链的收件箱和发件箱，让用户与合约能够将交易信息提交给L2并观察这些交易的输出。 用户，L1合约，Arbitrum节点，调用EthBridge的一系列合约来与Arbitrum链交互。
 
-The horizontal layer boundary above the EthBridge is labeled **AVM Architecture**, because what the EthBridge provides to the layer above it is an Arbitrum Virtual Machine, which can execute a computer program that reads inputs and produces outputs. This is the most important interface in Arbitrum, because it divides Layer 1 from Layer 2--it divides the Layer 1 components that provide the inbox/execution/outbox abstraction from the Layer 2 components that use that abstraction.
+EthBridge上方的水平线是AVM，EthBridge就是通过这里与上层交流的。AVM可以执行程序来读取输入并产生输出。 这里是Arbitrum最重要的接口，因为它区分开了L1和L2——具体分为抽象为收件箱/执行/发件箱/L1与使用该抽象模型的L2.
 
 ![img](https://lh4.googleusercontent.com/qwf_aYyB1AfX9s-_PQysOmPNtWB164_qA6isj3NhkDnmcro6J75f6MC2_AjlN60lpSkSw6DtZwNfrt13F3E_G8jdvjeWHX8EophDA2oUM0mEpPVeTlMbsjUCMmztEM0WvDpyWZ6R)
 
-The next layer up is **ArbOS**. This is a software program, written by Offchain Labs, that runs on the Arbitrum Virtual Machine, and serves as a record-keeper, traffic cop, and enforcer for the execution of smart contracts on the Arbitrum chain. It’s called ArbOS because it plays a role like a (lightweight version of) the operating system on a laptop or phone--it’s the program that starts up first and that manages the execution of all other code on the chain. Importantly, ArbOS runs entirely at Layer 2, off of the Ethereum chain, so it can take advantage of the scalability and low cost of Layer 2 computation.
+再上一层是ArbOS。 由Offchain Labs开发的软件，负责维护记录，交易管理，以及对智能合约监管。 之所以叫ArbOS是因为它就像电脑或手机的操作系统（轻量级的）一样，它先启动然后再管理链上的其他代码。 重要的一点是，ArbOS运行于L2上而非以太坊上，所以非常好地利用了扩容和L2低成本的运算。
 
-The horizontal layer boundary above ArbOS is called **EVM compatibility** because ArbOS provides an Ethereum Virtual Machine compatible execution environment for smart contracts. That is, you can send ArbOS the EVM code for a contract, in the same way you would send that contract to Ethereum, and ArbOS will load the contract and enable it to service transactions, just like on Ethereum. ArbOS takes care of the details of compatibility, so the smart contract programmer can just write their code like they would on Ethereum (or often, just take existing Ethereum contracts and redeploy them).
+ArbOS之上的水平层叫做EVM兼容层，因为ArbOS为智能合约提供了兼容以太坊虚拟机的执行环境。 也就是说，你可以向ArbOS发送合约的EVM代码，像在以太坊上部署合约一样，ArbOS会加载合约并令其可用。 ArbOS在兼容性的细节方面处理的非常好，所以智能合约开发者可以像在以太坊上那样编写代码（更常见的情况是，直接将现有的以太坊合约移植过来）。
 
-At the top of the stack--the upper right portion of the diagram--are **EVM contracts** which have been deployed to the Arbitrum chain by developers, and which execute transactions that are submitted to the chain.
+在整个栈智之上，图表的右上部分，是由开发者部署到Arbitrum上的EVM合约。
 
-That’s the right hand side of the diagram, which provides the Arbitrum chain functionality. Now let’s turn to the left side, which more directly supports users.
+图表右边是整个Arbitrum链的功能。 现在我们再来看一下左侧，左侧更多与用户有关。
 
-On the lower left are standard **Ethereum nodes**, which are used to interact with the Ethereum chain. Just above that are **Arbitrum nodes**. As the name suggests, these are used to interact with Arbitrum. They support the same API as Ethereum nodes, so they work well with existing Ethereum tools -- you can point your Ethereum-compatible wallet or tools at an Arbitrum node and they’ll be able to talk to each other. Just like on Ethereum, anyone can run an Arbitrum node, but many people will choose instead to rely on a node run by someone else.
+左下方是标准的以太坊节点，用户借此与以太坊链交互。 上面的是Arbitrum节点。 顾名思义，是用于用户与Arbitrum交互的。 Arbitrum节点支持与以太坊节点相同的API，所以与现行的以太坊工具都能完美工作——你可以将你的以太坊钱包或工具直接指向Arbitrum节点，双方即可通信了。 正如在以太坊上一样，任何人都可以运行Arbitrum节点，但仍会有许多人选择依赖其他人建立的节点。
 
-Some Arbitrum nodes service user requests, and others choose to serve only as validators, which work to ensure the correctness of the Arbitrum chain. (See the [Validators](#validators) section for details.)
+一些 Arbitrum 节点为用户请求提供服务，而另一些则选择仅充当验证者，以确保 Arbitrum 链的正确性。 （有关详细信息，请参阅 [验证者](#validators) 部分。）
 
-Last, but certainly not least, we see **users** on the upper left. Users use wallets, dapp front ends, and other tools to interact with Arbitrum. Because Arbitrum nodes support the same API as Ethereum, users don’t need entirely new tooling and developers don’t need to rewrite their dapps.
+最后但同样重要的是，我们在左上角看到 **用户**。 用户使用钱包、dapp 或其他工具与 Arbitrum 进行交互。 由于 Arbitrum 节点支持与以太坊相同的 API，因此用户不需要全新的工具，开发人员也不需要重写他们的 dapp。
 
 ## Above or Below the Line?
 
