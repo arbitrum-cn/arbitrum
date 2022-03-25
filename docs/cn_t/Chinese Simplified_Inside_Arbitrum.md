@@ -64,23 +64,23 @@ Arbitrum是乐观的，通过验证者发布rollup区块以及任何人都可以
 
 在交互式证明的范式中，Alice和Bob会在一个往返驳诘式的协议中进行交互，以最大限度减少L1上仲裁人所需要的工作量。
 
-Arbitrum的解决方案是基于争议的分解。 如果Alice的断言包含的行为有N步，Alice会将其分解为两个N/2长度的断言，Bob则需要选择N/2步长度的断言来挑战。 现在争议的规模减半。 This process continues, cutting the dispute in half at each stage, until they are disagreeing about a single step of execution. Note that so far the L1 referee hasn't had to think about execution "on the merits". It is only once the dispute is narrowed down to a single step that the L1 referee needs to resolve the dispute by looking at what the instruction actually does and whether Alice's claim about it is correct.
+Arbitrum的解决方案是基于争议的分解。 如果Alice的断言包含的行为有N步，Alice会将其分解为两个N/2长度的断言，Bob则需要选择N/2步长度的断言来挑战。 现在争议的规模减半。 该过程不断继续，每次将争议范围减半，直到找到它们所争议的那一步行为。 请注意，到目前为止L1裁判还不需要考虑争议的是非曲直。 L1仲裁在范围缩窄到单步时才会介入，去检查该行为到底做了什么以及Alice的断言是否正确。
 
-The key principle behind interactive proving is that if Alice and Bob are in a dispute, Alice and Bob should do as much off-chain work as possible needed to resolve their dispute, rather than putting that work onto an L1 contract.
+交互式证明的核心思想是，若Alice和Bob产生争议，应该尽可能将大部分工作量置于链下解决，而不是把所有工作量都放到L1的仲裁合约上。
 
-### Re-executing transactions
+### 再执行交易
 
-The alternative to interactive proving would be to have a rollup block contain a claimed machine state hash after every individual transaction. Then in case of a dispute, the L1 referee would emulate the execution of an entire transaction, to see whether the outcome matches Alice's claim.
+交互式证明的替代方案是让每一个rollup区块中在每一条交易执行后都更新一个断言状态哈希。 在有争议的情况下，L1裁判会对整个交易进行审查，来确定是否满足Alice的断言。
 
-### Why interactive proving is better
+### 为什么交互式证明更好
 
-We believe strongly that interactive proving is the superior approach, for the following reasons.
+基于下列理由，我们坚定认为交互式证明是更好的选择。
 
-**More efficient in the optimistic case**: Because interactive proving can resolve disputes that are larger than one transaction, it can allow a rollup block to contain only a single claim about the end state of the chain after all of the execution covered by the block. By contrast, reexecution requires posting a state claim for each transaction within the rollup block. With hundred or thousands of transactions per rollup block, this is a substantial difference in L1 footprint -- and L1 footprint is the main component of cost.
+*在乐观式情况下更加有效率：*由于交互式证明能够解决多于一笔的争议，它能够让rollup区块只包含一个所有行为执行完毕后的末状态哈希。 相反，再执行则需要在rollup区块中为每一笔交易都附上一个状态声明。 在一个rollup区块中有成千上百笔交易，所以在L1燃气经济性上有显著不同——而L1燃气则是成本的主要来源。
 
-**More efficient in the pessimistic case**: In case of a dispute, interactive proving requires the L1 referee contract only to check that Alice and Bob's actions "have the right shape", for example, that Alice has divided her N-step claim into two claims half as large. (The referee doesn't need to evaluate the correctness of Alice's claims--Bob does that, off-chain.) Only one instruction needs to be reexecuted. By contrast, reexecution requires the L1 referee to emulate the execution of an entire transaction.
+*在悲观式情况下更加有效率：*在有争议情况下，交互式证明需要L1仲裁合约只需要检查Alice和Bob的切分步骤行为是正确的，例如Alice确实将自己的断言二等分了。 （在接触到最终步骤之前，仲裁并不需要判定Alice的断言是否正确，Bob在链下做了这个工作。） 只有一步交易需要再执行。 相反，再执行交易范式则需要L1仲裁去评估整个的交易历史。
 
-**Much higher per-tx gas limit:** Interactive proving can escape from Ethereum's tight per-transaction gas limit; a transaction that requires so much gas it couldn't even fit into an Ethereum block is possible on Arbitrum. The gas limit isn't infinite, for obvious reasons, but it can be much larger than on Ethereum. As far as Ethereum is concerned, the only downside of a gas-heavy Arbitrum transaction is that it may require an interactive fraud proof with slightly more steps (and only if indeed it is fraudulent). By contrast, reexecution must impose a _lower_ gas limit than Ethereum, because it must be possible to emulate execution of the transaction (which is more expensive than executing it directly) within a single Ethereum transaction.
+*每笔交易更高的gas limit：*交互式证明可以摆脱以太坊每笔交易的比较紧张的gas limit；一笔需要花费大量gas的交易在以太坊上无法实现，但在Arbitrum上却是有可能的。 显然，gas limit不可能是无限的，但还是可以比以太坊上大很多。 考虑到以太坊的话，在Arbitrum上高gas交易的尾翼缺点是，可能需要稍多一点的交互式证明步骤（而且还是在存在欺诈的情况下）。 而对于再执行交易范式，其gas limit必须低于以太坊，因为那样才有可能对在单笔以太坊交易中对其包含的所有交易的执行进行检查（比直接执行交易更贵）。
 
 **No limit on contract size**: Interactive proving does not need to create an Ethereum contract for each L2 contract, so it does not need contracts to fit within Ethereum's contract size limit. As far as Arbitrum's dispute contracts are concerned, deploying a contract on L2 is just another bit of computation like any other. By contrast, reexecution approaches must impose a _lower_ contract size limit than Ethereum, because they need to be able to instrument a contract in order to emulate its execution, and the resulting instrumented code must fit into a single Ethereum contract.
 
