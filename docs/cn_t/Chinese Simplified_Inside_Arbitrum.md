@@ -48,9 +48,9 @@ _Rollup_
 
 这也使得任何人都能够充分参与Arbitrum议定书，运行一个Arbitrum中心或作为一个验证者参加。 任何关于Arbitrum链历史或状态的信息都不是秘密。
 
-_Optimistic_
+_乐观式_
 
-Arbitrum is optimistic, which means that Arbitrum advances the state of its chain by letting any party (a “validator”) post a rollup block that that party claims is correct, and then giving everyone else a chance to challenge that claim. If the challenge period (roughly a week) passes and nobody has challenged the claimed rollup block, Arbitrum confirms the rollup block as correct. If somebody challenges the claim during the challenge period, then Arbitrum uses an efficient dispute resolution protocol (detailed below) to identify which party is lying. The liar will forfeit a deposit, and the truth-teller will take part of that deposit as a reward for their efforts (some of the deposit is burned, guaranteeing that the liar is punished even if there's some collusion going on).
+Arbitrum是乐观的，通过验证者发布rollup区块以及任何人都可以对其进行挑战的方式，Arbitrum将链状态不断向前推进。 如果挑战期（大约为一周）结束后仍没有对rollup区块提出挑战，Arbitrum就会将该rollup区块认定为正确的。 如果在挑战期内有人提出挑战，Arbitrum会使用一个高效率的争议解决协议（下述）来判定谁是作恶者。 The liar will forfeit a deposit, and the truth-teller will take part of that deposit as a reward for their efforts (some of the deposit is burned, guaranteeing that the liar is punished even if there's some collusion going on).
 
 Because a party who tries to cheat will lose a deposit, attempts to cheat should be very rare, and the normal case will be a single party posting a correct rollup block, and nobody challenging it.
 
