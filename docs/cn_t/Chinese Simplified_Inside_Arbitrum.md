@@ -185,44 +185,44 @@ Rollup协议记录了一条rollup区块的链条。 它们与以太坊区块并�
 
 除了rollup区块编号，上述内容中的其余内容均是区块的提出者声明的。 Arbitrum在最开始并不知道这些内容是否是正确的。 如果所有的内容都正确，rollup协议最终应确认该区块。 如果有任意内容是错误的，该区块最终会被拒绝。
 
-每一个区块都会隐形地声明它的父区块是正确的。 This implies, transitively, that a block implicitly claims the correctness of a complete history of the chain: a sequence of ancestor blocks that reaches all the way back to the birth of the chain.
+每一个区块都会隐形地声明它的父区块是正确的。 这也连锁式地标明了：一个区块会隐形地宣称整条链是正确的：一系列的祖先区块都是正确的，直至整条链的创始区块。
 
-A block is also implicitly claiming that its older siblings (older blocks with the same predecessor), if there are any, are incorrect. If two blocks are siblings, and the older sibling is correct, then the younger sibling is considered incorrect, even if everything else in the younger sibling is true.
+同样，每个区块都隐形地声明，其兄弟区块（有着同一个父区块的其他区块）都是错误的（如果存在兄区块的话）。 若两个区块是兄弟关系，兄区块是正确的，那么弟区块一定是错误的，即使弟区块中的所有内容是真实有效的。
 
-The block is assigned a deadline, which says how long other validators have to respond to it. If you’re a validator, and you agree that a rollup block is correct, you don’t need to do anything. If you disagree with a rollup block, you can post another block with a different result, and you’ll probably end up in a challenge against the first block’s staker. (More on challenges below.)
+每个区块都会被分配一个截止时间，在该时间内其他验证者才能对其进行响应。 如果你是一名验证者，并认同某一个rollup区块是正确的，那么你什么也不用做。 如果你不认同该区块，你可以发布另一个有不同结果的区块，你可能会被该区块的质押者挑战。 （更多请见下方挑战章节。）
 
-In the normal case, the rollup chain will look like this:
+正常情况下，rollup链看起来是这样的：
 
 ![img](https://lh3.googleusercontent.com/vv118kJMXj76PG6J-Jv4BC9KTpe72mdfD1uWoqhKXvKKfPWHW6wMMCvJ9KKQx_VXIw34XfzT4yfyNVtQVstYRczLk6kLKvBv8Pbl-0MjSzGxz1Z_8T5Y_6UcDMWpy7_D9PxQYKdT)
 
-On the left, representing an earlier part of the chain’s history, we have confirmed rollup blocks. These have been fully accepted and recorded by the EthBridge. The newest of the confirmed blocks, block 94, is called the “latest confirmed block.” On the right, we see a set of newer proposed rollup blocks. The EthBridge can’t yet confirm or reject them, because their deadlines haven’t run out yet. The oldest block whose fate has yet to be determined, block 95, is called the “first unresolved block.”
+左侧都是已确认区块，代表了该链的早期历史。 这些区块都被EthBridge接受并记录下来。 94号区块是“最新确认区块”。 在右侧，有一系列新的刚被提出的rollup区块。 EthBridge尚不能确认或拒绝，因为其截止时间还没有到。 待决区块中最老的95号区块，被称为“首个待决区块”。
 
-Notice that a proposed block can build on an earlier proposed block. This allows validators to continue proposing blocks without needing to wait for the EthBridge to confirm the previous one. Normally, all of the proposed blocks will be valid, so they will all eventually be accepted.
+注意，一个待决区块是可以连接在另一个待决区块之后的。 这使得验证者能够不断地提出新的区块而不用等待EthBridge的最终确认。 正常乐观情况下，所有的待决区块都是有效的，最终都会被接受。
 
-Here’s another example of what the chain state might look like, if several validators are being malicious. It’s a contrived example, designed to illustrate a variety of cases that can come up in the protocol, all smashed into a single scenario.
+下面的例子展现了有恶意验证者存在的情况下链的状态。 这是一个人工策划过的场景，用来说明协议可能碰到的各种情况。我们将各种情况都融汇到了一个场景中去。
 
 ![img](https://lh3.googleusercontent.com/IKBNeX9IVAD5Vom8vqYER4CEZhTecJJrp51ddlEGYiZrdV6y9zaG0Ip8HuKgfJ-eS9_TN_C2I0EPl-7H5ITRgSQqJONnSE7X0P62sRbGoiv_shmijBxsVDJL9RhWbyDjs2lKxU-M)
 
-There’s a lot going on here, so let’s unpack it.
+看起来有些复杂，我们梳理下：
 
-- Block 100 has been confirmed.
-- Block 101 claimed to be a correct successor to block 100, but 101 was rejected (hence the X drawn in it).
-- Block 102 was eventually confirmed as the correct successor to 100.
-- Block 103 was confirmed and is now the latest confirmed block.
-- Block 104 was proposed as a successor to block 103, and 105 was proposed as a successor to 104. 104 was rejected as incorrect, and as a consequence 105 was rejected because its predecessor was rejected.
-- Block 106 is unresolved. It claims to be a correct successor to block 103 but the protocol hasn’t yet decided whether to confirm or reject it. It is the first unresolved block.
-- Blocks 107 and 108 claim to chain from 106. They are also unresolved. If 106 is rejected, they will be automatically rejected too.
-- Block 109 disagrees with block 106, because they both claim the same predecessor. At least one of them will eventually be rejected, but the protocol hasn’t yet resolved them.
-- Block 110 claims to follow 109. It is unresolved. If 109 is rejected, 110 will be automatically rejected too.
-- Block 111 claims to follow 105. 111 will inevitably be rejected because its predecessor has already been rejected. But it hasn’t been rejected yet, because the protocol resolves blocks in block number order, so the protocol will have to resolve 106 through 110, in order, before it can resolve 111. After 110 has been resolved, 111 can be rejected immediately.
+- 区块100已被确认。
+- 区块101宣称自己是区块100的正确子区块，但101被拒绝了（因为打了叉）。
+- 区块102最终被确认为区块100的正确子区块。
+- 区块103也确认了，现在是最新确认区块。
+- 区块104是103的子区块，105是104的子区块。 由于104是错误的，105自然也会被拒绝，因为它的父区块就是错的。
+- 区块106待决。 它宣称自己是区块103的子区块，但协议尚未决定是确认还是拒绝它。 这是首个待决区块。
+- 区块107和108延续自区块106， 它们也是待决状态。 如果106被拒绝，它们也会被拒绝。
+- 区块109不认同区块106，因为它们的父区块相同。 它们中至少会有一个被拒绝，但协议尚未解决。
+- 区块110跟随109。 待决状态。 如果109被拒绝，110也会。
+- 区块111跟随105。 111最终肯定会被拒绝因为其父区块已经被拒绝， 但它还没有被拒绝，因为协议按照块号顺序解析块，所以协议必须按顺序解析 106 到 110，然后才能解析 111。 在110解决后，111会被立即拒绝。
 
-Again: this sort of thing is very unlikely in practice. In this diagram, at least four parties must have staked on wrong rollup blocks, and when the dust settles at least four parties will have lost their stakes. The protocol handles these cases correctly, of course, but they’re rare corner cases. This diagram is designed to illustrate the variety of situations that are possible in principle, and how the protocol would deal with them.
+再次提醒：这种情况在实践中是非常不可能发生的。 本图中，至少有四方质押在了错误的结点上，尘埃落定后至少会有四方失去质押物。 协议是有能力正确处理这些情况的，但这确实是边缘场景。 这个例子仅用来说明原理上可能会出现的各种情况，以及协议会如何处理。
 
-### Staking
+### 质押
 
-At any given time, some validators will be stakers, and some will not. Stakers deposit funds that are held by the EthBridge and will be confiscated if the staker loses a challenge. Currently all chains accept stakes in ETH.
+在任何时间，都会有一部分验证者成为质押者，而另一部分则不会。 质押者通过EthBridge充值资金，如果输掉挑战则会被没收。 目前所有链接受以太币为质押物。
 
-A single stake can cover a chain of rollup blocks. Every staker is staked on the latest confirmed block; and if you’re staked on a block, you can also stake on one successor of that block. So you might be staked on a sequence of blocks that represent a single coherent claim about the correct history of the chain. A single stake suffices to commit you to that sequence of blocks.
+单笔质押可覆盖一系列rollup区块。 Every staker is staked on the latest confirmed block; and if you’re staked on a block, you can also stake on one successor of that block. So you might be staked on a sequence of blocks that represent a single coherent claim about the correct history of the chain. A single stake suffices to commit you to that sequence of blocks.
 
 In order to create a new rollup block, you must be a staker, and you must already be staked on the predecessor of the new block you’re creating. The stake requirement for block creation ensures that anyone who creates a new block has something to lose if that block is eventually rejected.
 
