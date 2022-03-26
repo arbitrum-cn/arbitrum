@@ -222,9 +222,9 @@ Rollup协议记录了一条rollup区块的链条。 它们与以太坊区块并�
 
 在任何时间，都会有一部分验证者成为质押者，而另一部分则不会。 质押者通过EthBridge充值资金，如果输掉挑战则会被没收。 目前所有链接受以太币为质押物。
 
-单笔质押可覆盖一系列rollup区块。 Every staker is staked on the latest confirmed block; and if you’re staked on a block, you can also stake on one successor of that block. So you might be staked on a sequence of blocks that represent a single coherent claim about the correct history of the chain. A single stake suffices to commit you to that sequence of blocks.
+单笔质押可覆盖一系列rollup区块。 每个质押者都质押在最新确认区块上；如果你质押了一个区块，你还可以继续向其子区块质押。 所以你是可以质押在一串连续正确的区块上的。 A single stake suffices to commit you to that sequence of blocks.
 
-In order to create a new rollup block, you must be a staker, and you must already be staked on the predecessor of the new block you’re creating. The stake requirement for block creation ensures that anyone who creates a new block has something to lose if that block is eventually rejected.
+要创建新的rollup区块，你必须成为质押者，并且已经在你所创建的区块的父区块上质押了资金。 创建新区块的质押需求确保了如果作恶则惩罚机制能够执行。
 
 The EthBridge keeps track of the current required stake amount. Normally this will equal the base stake amount, which is a parameter of the Arbitrum chain. But if the chain has been slow to make progress lately, the required stake will increase, as described in more detail below.
 
