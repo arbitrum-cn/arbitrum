@@ -183,9 +183,9 @@ Rollup协议记录了一条rollup区块的链条。 它们与以太坊区块并�
 - 对本链历史输出的哈希
 - AVM 状态的哈希值。
 
-Except for the rollup block number, the contents of the block are all just claims by the block’s proposer. Arbitrum doesn’t know at first whether any of these fields are correct. If all of these fields are correct, the protocol should eventually confirm the block. If one or more of these fields are incorrect, the protocol should eventually reject the block.
+除了rollup区块编号，上述内容中的其余内容均是区块的提出者声明的。 Arbitrum在最开始并不知道这些内容是否是正确的。 如果所有的内容都正确，rollup协议最终应确认该区块。 如果有任意内容是错误的，该区块最终会被拒绝。
 
-A block is implicitly claiming that its predecessor block is correct. This implies, transitively, that a block implicitly claims the correctness of a complete history of the chain: a sequence of ancestor blocks that reaches all the way back to the birth of the chain.
+每一个区块都会隐形地声明它的父区块是正确的。 This implies, transitively, that a block implicitly claims the correctness of a complete history of the chain: a sequence of ancestor blocks that reaches all the way back to the birth of the chain.
 
 A block is also implicitly claiming that its older siblings (older blocks with the same predecessor), if there are any, are incorrect. If two blocks are siblings, and the older sibling is correct, then the younger sibling is considered incorrect, even if everything else in the younger sibling is true.
 
