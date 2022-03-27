@@ -226,21 +226,21 @@ Rollup协议记录了一条rollup区块的链条。 它们与以太坊区块并�
 
 要创建新的rollup区块，你必须成为质押者，并且已经在你所创建的区块的父区块上质押了资金。 创建新区块的质押需求确保了如果作恶则惩罚机制能够执行。
 
-EthBridge记录了当前所需要的质押数量。 正常情况下会与基础质押数量相等，基础质押数量是Arbitrum链的一个参数。 But if the chain has been slow to make progress lately, the required stake will increase, as described in more detail below.
+EthBridge记录了当前所需要的质押数量。 正常情况下会与基础质押数量相等，基础质押数量是Arbitrum链的一个参数。 但如果链后来行动迟缓，质押数量会增加，下面为详述。
 
-The rules for staking are as follows:
+质押规则：
 
-- If you’re not staked, you can stake on the latest confirmed rollup block. When doing this, you deposit with the EthBridge the current minimum stake amount.
-- If you’re staked on a rollup block, you can also add your stake to any one successor of that block. (The EthBridge tracks the maximum rollup block number you’re staked on, and lets you add your stake to any successor of that block, updating your maximum to that successor.) This doesn’t require you to place a new stake.
-  - A special case of adding your stake to a successor block is when you create a new rollup block as a successor to a block you’re already staked on.
-- If you’re staked only on the latest confirmed block (and possibly earlier blocks), you or anyone else can ask to have your stake refunded. Your staked funds will be returned to you, and you will no longer be a staker.
-- If you lose a challenge, your stake is removed from all blocks and you forfeit your staked funds.
+- 如果你没有质押，可以质押在最新已确认rollup区块上。 质押数量由EthBridge的当前最小质押额确定。
+- 如果你已经质押在了一个rollup区块上，你还可以将质押物移动到任意的子区块上。 （EthBridge会追踪你所质押的区块的最大高度，并允许你为任意子区块质押，同时更新最大高度至该子区块。） 这个过程不需要额外增加质押。
+  - 只有一个特殊情况需要额外增加质押物，即在你质押的区块下创建新的rollup区块。
+- 如果你仅仅质押在了最新确认区块（可能是比较老的区块）上，你或任何人都可以请求将你的质押物返还。 质押物返还给你后，你将不再质押者。
+- 如果你输掉了挑战，你的质押物将从所有的区块上移除，没收为罚金。
 
-Notice that once you are staked on a rollup block, there is no way to unstake. You are committed to that block. Eventually one of two things will happen: that block will be confirmed, or you will lose your stake. The only way to get your stake back is to wait until all of the rollup blocks you are staked on are confirmed.
+请注意，一旦你质押了一个rollup区块，是无法撤销质押的。 你对这个区块就做出了承诺。 最终会发生两件事：该区块确认了，或者你的质押被没收了。 只有在区块被确认后你才能拿回你的质押物。
 
-#### Setting the current minimum stake amount
+#### 设置当前最小质押额
 
-One detail we deferred earlier is how the current minimum stake amount is set. Normally, this is just equal to the base stake amount, which is a parameter of the Arbitrum chain. However, if the chain has been slow to make progress in confirming blocks, the stake requirement will escalate temporarily. Specifically, the base stake amount is multiplied by a factor that is exponential in the time since the deadline of the first unresolved node passed. This ensures that if malicious parties are placing false stakes to try to delay progress (despite the fact that they’re losing those stakes), the stake requirement goes up so that the cost of such a delay attack increases exponentially. As block resolution starts advancing again, the stake requirement will go back down.
+之前没有讨论当前最小质押额是如何设定的。 通常，它等于基础质押额，基础质押额是Arbitrum链的一个参数。 不过，如果链确认区块的速度缓慢，质押数量会暂时增加。 Specifically, the base stake amount is multiplied by a factor that is exponential in the time since the deadline of the first unresolved node passed. This ensures that if malicious parties are placing false stakes to try to delay progress (despite the fact that they’re losing those stakes), the stake requirement goes up so that the cost of such a delay attack increases exponentially. As block resolution starts advancing again, the stake requirement will go back down.
 
 ### Rules for Confirming or Rejecting Rollup Blocks
 
