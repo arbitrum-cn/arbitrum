@@ -279,7 +279,7 @@ EthBridge记录了当前所需要的质押数量。 正常情况下会与基础�
 
 博弈分为两个阶段：分割，之后是单步证明。 分割会缩窄二人的争议范围，直至有争议的操作只有一条。 随后单步证明会决定谁的主张是对的。
 
-We’ll describe the dissection part of the protocol twice. First, we’ll give a simplified version which is easier to understand but less efficient. Then we’ll describe how the real version differs from the simplified one.
+我们会分两次讲述这部分的协议。 首先，会给出一个精简版，易于理解但效率不够高。 然后还会给出一个真实实现版本。
 
 ### Dissection Protocol: Simplified Version
 
