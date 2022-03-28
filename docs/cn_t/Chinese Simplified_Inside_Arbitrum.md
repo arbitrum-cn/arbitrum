@@ -240,13 +240,13 @@ EthBridge记录了当前所需要的质押数量。 正常情况下会与基础�
 
 #### 设置当前最小质押额
 
-之前没有讨论当前最小质押额是如何设定的。 通常，它等于基础质押额，基础质押额是Arbitrum链的一个参数。 不过，如果链确认区块的速度缓慢，质押数量会暂时增加。 Specifically, the base stake amount is multiplied by a factor that is exponential in the time since the deadline of the first unresolved node passed. This ensures that if malicious parties are placing false stakes to try to delay progress (despite the fact that they’re losing those stakes), the stake requirement goes up so that the cost of such a delay attack increases exponentially. As block resolution starts advancing again, the stake requirement will go back down.
+之前没有讨论当前最小质押额是如何设定的。 通常，它等于基础质押额，基础质押额是Arbitrum链的一个参数。 不过，如果链确认区块的速度缓慢，质押数量会暂时增加。 具体来说，最小质押额 = 基础质押额 × 一个因子，该因子与自首个待决区块的截止时间以来所流逝的时间呈指数增长。 这样可以确保，如果有作恶者通过错误质押来降低链的运行速度（尽管最终会被没收），它们的降速攻击也需要付出指数增长的成本。 随着区块确认继续向前，质押需求最终会回到正常。
 
-### Rules for Confirming or Rejecting Rollup Blocks
+### 确认或拒绝rollup区块的规则
 
-The rules for resolving rollup blocks are fairly simple.
+解决rollup区块的规则非常简单。
 
-The first unresolved block can be confirmed if:
+首个待决区块满足下列情况会被确认：
 
 - the block’s predecessor is the latest confirmed block, and
 - the block’s deadline has passed, and
