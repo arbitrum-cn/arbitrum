@@ -323,19 +323,19 @@ The challenge protocol is designed so that the dispute can be resolved with a mi
 
 The only point where the EthBridge needs to evaluate a move “on the merits” is at the one-step proof, where it needs to look at Alice’s proof and determine whether the proof that was provided does indeed establish that the virtual machine moves from the before state to the claimed after state after one step of computation. We’ll discuss the details of one-step proofs below in the [Arbitrum Virtual Machine](#avm) section.
 
-## Validators
+## 验证者
 
-Some Arbitrum nodes will choose to act as _validators_. This means that they watch the progress of the rollup protocol and participate in that protocol to advance the state of the chain securely.
+一些 Arbitrum 节点会选择充当验证者。 验证者会关注 Rollup 协议的运行并参与该协议，安全地推进链状态不断向前。
 
-Not all nodes will choose to do this. Because the rollup protocol doesn’t decide what the chain will do but merely confirms the correct behavior that is fully determined by the inbox messages, a node can ignore the rollup protocol and simply compute for itself the correct behavior. For more on what such nodes might do, see the [Full Nodes](#full-nodes) section.
+并非所有节点都会选择这样做。 因为 Rollup 协议不决定链将做什么，而只是确认完全由收件箱消息确定的正确行为，所以节点可以忽略 Rollup 协议并简单地为自己计算正确的行为。 有关此类节点可能执行的操作的更多信息，请参阅完整节点部分。
 
-Being a validator is permissionless--anyone can do it. Offchain Labs provides open source validator software, including a pre-built Docker image.
+成为验证者是无需许可的——任何人都可以做到。 Offchain Labs 提供了开源的验证者软件，及预编译的Docker image。
 
-Every validator can choose their own approach, but we expect validators to follow three common strategies.
+每个验证者都可以选择自己的策略，但我们希望验证者遵循三种常见的策略。
 
-- The _active validator_ strategy tries to advance the state of the chain by proposing new rollup blocks. An active validator is always staked, because creating a rollup block requires being staked. A chain really only needs one honest active validator; any more is an inefficient use of resources. For the Arbitrum One chain, Offchain Labs runs an active validator.
-- The _defensive validator_ strategy watches the rollup protocol operate. If only correct rollup blocks are proposed, this strategy doesn't stake. But if an incorrect block is proposed, this strategy intervenes by posting a correct block or staking on a correct block that another party has posted. This strategy avoids staking when things are going well, but if someone is dishonest it stakes in order to defend the correct outcome.
-- The _watchtower validator_ strategy never stakes. It simply watches the rollup protocol and if an incorrect block is proposed, it raises the alarm (by whatever means it chooses) so that others can intervene. This strategy assumes that other parties who are willing to stake will be willing to intervene in order to take some of the dishonest proposer’s stake, and that that can happen before the dishonest block’s deadline expires. (In practice this will allow several days for a response.)
+- 主动验证者策略试图通过提议新的 rollup 区块来推进链的状态。 但由于提议rollup区块需要质押，因此活跃的验证者需要一直提供质押。 一条链实际上只需要一个诚实的主动验证者，如果验证者过多其实是对资源的低效利用和浪费。 对于 Arbitrum One 来说，Offchain Labs 在上面一直运行着一个活跃的验证者。
+- 防御验证者策略监视 Rollup 协议的运行。 如果提出的 Rollup 区块皆为正确的区块，则此策略的验证者将不会直接参与进网络。 但是，如果有恶意验证者提议了不正确的区块，该策略会通过自行提议正确的区块或在另一方已提议的正确区块上进行质押来干预。 这种策略在网络进展顺利时可以避免自己质押，但如果有人试图作弊，它将会进行质押以捍卫结果的正确。
+- The _watchtower validator_ strategy never stakes. 它只是监视 Rollup 协议网络，如果有恶意验证者提议了不正确的区块，它就会发出警报（通过它选择的任何方式），以便其他验证者可以进行干预。 该策略假设愿意进行质押的其他各方会进行干预，以获取不诚实提议者的一些质押，并且这可能会在不诚实区块的截止日期到期之前发生。 （在实际环境中，这将允许几天的相应。）
 
 Under normal conditions, validators using the defensive and watchtower strategies won’t do anything except observe. A malicious actor who is considering whether to try cheating won’t be able to tell how many defensive and watchtower validators are operating incognito. Perhaps some defensive validators will announce themselves, but others probably won’t, so a would-be attacker will always have to worry that defenders are waiting to emerge.
 
