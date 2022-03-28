@@ -248,36 +248,36 @@ EthBridge记录了当前所需要的质押数量。 正常情况下会与基础�
 
 首个待决区块满足下列情况会被确认：
 
-- the block’s predecessor is the latest confirmed block, and
-- the block’s deadline has passed, and
-- there is at least one staker, and
-- all stakers are staked on the block.
+- 该区块的父区块是最新确认区块，且
+- 该区块的截止时间已经过了，且
+- 至少有一个质押者，且
+- 所有质押者均质押在该区块上
 
-The first unresolved block can be rejected if:
+首个待决区块满足下列情况会被拒绝：
 
-- the block’s predecessor has been rejected, or
-- all of the following are true:
-  - the block’s deadline has passed, and
-  - there is at least one staker, and
-  - no staker is staked on the block.
+- 该区块的父区块已被拒绝，或
+- 下面几点皆为真：
+  - 该区块的截止时间已经过了，且
+  - 至少有一个质押者，且
+  - 没有质押者质押在该区块上。
 
-A consequence of these rules is that once the first unresolved block’s deadline has passed (and assuming there is at least one staker staked on something other than the latest confirmed block), the only way the block can be unresolvable is if at least one staker is staked on it and at least one staker is staked on a different block with the same predecessor. If this happens, the two stakers are disagreeing about which block is correct. It’s time for a challenge, to resolve the disagreement.
+这一系列规则的结果是，一旦首个待决区块的截止时间已过（假设当前有至少一名质押者质押在了除最新确认区块以外的其他地方），该区块仍是待决状态只有一种可能：至少有一名质押者质押在其上，至少有一名质押者质押在其兄弟区块上。 如果发生了这种情况，双方互不认同。 就要进行挑战解决争议了。
 
-## Challenges
+## 挑战
 
-Suppose the rollup chain looks like this:
+假设rollup链的状态如下：
 
 ![img](https://lh4.googleusercontent.com/kAZY9H73dqcHvboFDby9nrtbYZrbsHCYtE5X9NIZQsvcz58vV0WUWUq1xsYKzYWQSc1nPZ8W86LLX0lD3y-ctEaG2ISa2Wpz2pYxTzW09P1UvqSDuoqkHlGDYLLMTzLqX4rlP8Ca)
 
-Blocks 93 and 95 are sibling blocks (they both have 92 as predecessor). Alice is staked on 93 and Bob is staked on 95.
+区块93和95是兄弟区块（父区块皆为92）。 Alice质押于93而Bob质押于95。
 
-At this point we know that Alice and Bob disagree about the correctness of block 93, with Alice committed to 93 being correct and Bob committed to 93 being incorrect. (Bob is staked on 95, and 95 claims that 92 is the last correct block before it, which implies that 93 would be incorrect.)
+目前我们可知Alice和Bob对区块93的正确性有争议，Alice承诺93是正确的而Bob承诺93是错误的。 （Bob质押于95，而95之前的最新确认区块是92，这暗示了93是错的。）
 
-Whenever two stakers are staked on sibling blocks, and neither of those stakers is already in a challenge, anyone can start a challenge between the two. The rollup protocol will record the challenge and referee it, eventually declaring a winner and confiscating the loser’s stake. The loser will be removed as a staker.
+只要双方质押了兄弟区块，且分割双方没有在既有挑战中，任何人都可以对他们进行挑战。 Rollup协议会记录下本次挑战并充当仲裁，最终会宣布胜者并没收失败者的质押资金。 失败者不再是质押者。
 
-The challenge is a game in which Alice and Bob alternate moves, with an Ethereum contract as the referee. Alice, the defender, moves first.
+挑战是一场Alice和Bob交替出手的博弈，以一个以太坊作合约作为仲裁。 Alice，作为辩护者，最先行动。
 
-The game will operate in two phases: dissection, followed by one-step proof. Dissection will narrow down the size of the dispute until it is a dispute about just one instruction of execution. Then the one-step proof will determine who is right about that one instruction.
+博弈分为两个阶段：分割，之后是单步证明。 分割会缩窄二人的争议范围，直至有争议的操作只有一条。 随后单步证明会决定谁的主张是对的。
 
 We’ll describe the dissection part of the protocol twice. First, we’ll give a simplified version which is easier to understand but less efficient. Then we’ll describe how the real version differs from the simplified one.
 
