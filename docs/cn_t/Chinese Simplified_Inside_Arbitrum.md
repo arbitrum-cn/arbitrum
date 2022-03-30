@@ -285,27 +285,27 @@ EthBridge记录了当前所需要的质押数量。 正常情况下会与基础�
 
 Alice为自己的主张辩护，她的主张是：从父区块的状态开始，虚拟机的状态可以前进至她所主张的区块A上的状态。本质上，她是在宣称，虚拟机可以执行N条指令，消耗M条收件箱中的信息并将哈希从H'转换为H。
 
-Alice’s first move requires her to dissect her claims about intermediate states between the beginning (0 instructions executed) and the end (N instructions executed). So we require Alice to divide her claim in half, and post the state at the half-way point, after N/2 instructions have been executed.
+Alice的第一个动作需要她把她的断言从开始（0条指令已执行）到结束（N条指令已执行）以中间点切分。 协议要求Alice将其主张对半切分，发布中间点在执行了N/2步指令后的的状态。
 
-Now Alice has effectively bisected her N-step assertion into two (N/2)-step assertions. Bob has to point to one of those two half-size assertions and claim it is wrong.
+当Alice已经有效地将她的断言二等分变为两个N/2步的断言后， Bob需要在这两个片段中选择一段并声明它是错的。
 
-At this point we’re effectively back in the original situation: Alice having made an assertion that Bob disagrees with. But we have cut the size of the assertion in half, from N to N/2. We can apply the same method again, with Alice bisecting and Bob choosing one of the halves, to reduce the size to N/4. And we can continue bisecting, so that after a logarithmic number of rounds Alice and Bob will be disagreeing about a single step of execution. That’s where the dissection phase of the protocol ends, and Alice must make a one-step proof which will be checked by the EthBridge.
+在此，我们又回到了之前的状态：Alice主张一个断言，Bob不同意。 不过现在我们已经把断言长度从N缩短到了N/2。 我们可以再重复之前的动作，Alice二分，Bob选择不同意的那一半，缩短尺度到N/4。 我们可以继续该动作，经过对数轮的博弈，Alice和Bob的争议点就缩减为了单步操作。 自此，分割协议就终止了，Alice必须给EthBridge生成一个单步证明供其检测。
 
-### Why Dissection Correctly Identifies a Cheater
+### 为什么分割能够正确分辨作弊者
 
-Before talking about the complexities of the real challenge protocol, let’s stop to understand why the simplified version of the protocol is correct. Here correctness means two things: (1) if Alice’s initial claim is correct, Alice can always win the challenge, and (2) if Alice’s initial claim is incorrect, Bob can always win the challenge.
+在我们谈论更复杂的真实挑战协议之前，要停下来思考一下，为什么精简版的协议也是正确的。 这里的正确意味着两点：（1）如果Alice的初始断言是正确的，Alice总会赢得挑战；（2）如果Alice的初始断言是错误的，Bob总会赢得挑战。
 
-To prove (1), observe that if Alice’s initial claim is correct, she can offer a truthful midpoint claim, and both of the implied half-size claims will be correct. So whichever half Bob objects to, Alice will again be in the position of defending a correct claim. At each stage of the protocol, Alice will be defending a correct claim. At the end, Alice will have a correct one-step claim to prove, so that claim will be provable and Alice can win the challenge.
+欲证明（1）：Alice的初始断言是正确的，则她可以提供一个正确的中间点断言，两侧的半长断言也是正确的。 所以，不论Bob反对哪一侧，Alice还是会为正确的主张辩护。 在协议的任何阶段，Alice都在为正确的主张辩护。 最终的单步辩护也是正确的，Alice会赢得挑战。
 
-To prove (2), observe that if Alice’s initial claim is incorrect, this can only be because her claimed endpoint after N steps is incorrect. Now when Alice offers her midpoint state claim, that midpoint claim is either correct or incorrect. If it’s incorrect, then Bob can challenge Alice’s first-half claim, which will be incorrect. If Alice’s midpoint state claim is correct, then her second-half claim must be incorrect, so Bob can challenge that. So whatever Alice does, Bob will be able to challenge an incorrect half-size claim. At each stage of the protocol, Bob can identify an incorrect claim to challenge. At the end, Alice will have an incorrect one-step claim to prove, which she will be unable to do, so Bob can win the challenge.
+欲证明（2）：Alice的初始断言是错误的，只可能是因为她所宣称的终点在经过N步后是错误的。 Alice现在要提供中间点的断言，该断言要么正确要么错误。 如果错误，Bob可以挑战左半边断言，肯定是错的。 如果Alice的中间点是正确的，那另一半断言肯定是错的，Bob就可以挑战右半边的断言。 所以，不论Alice怎样做，Bob都可以找到不正确的半边断言。 而在接下来的每一轮中，Bob都可以对他认为不正确的断言进行挑战。 最终，Alice无法提供正确的单步证明，Bob将赢得挑战。
 
-(If you’re a stickler for mathematical precision, it should be clear how these arguments can be turned into proofs by induction on N.)
+（如果你是一个非常在意数学形式的人，显然这些结论是可以由基于N的归纳法得出的。）
 
-### The Real Dissection Protocol
+### 真实的分割协议
 
-The real dissection protocol is conceptually similar to the simplified one described above, but with several changes that improve efficiency or deal with necessary corner cases. Here is a list of the differences.
+真实的分割协议在理念上与上面的精简版是近似的，不过有了一些对效率和边界情况的提升。 下面是两者的区别。
 
-**K-way dissection:** Rather than dividing a claim into two segments of size N/2, we divide it into K segments of size N/K. This requires posting K-1 intermediate claims, at points evenly spaced through the claimed execution. This reduces the number of rounds by a factor of log(K)/log(2).
+**K式分割**将断言分割为N/K长度的K段，而非N/2长度的N段。 所以需要发布K-1个均匀分布的中间点断言。 该方法使降低了互动轮数，所需轮数为原轮数除以log(K)/log(2)倍。
 
 **Answer a dissection with a dissection:** Rather than having each round of the protocol require two moves, where Alice dissects and Bob chooses a segment to challenge, we instead require Bob, in challenging a segment, to post his own claimed endpoint state for that segment (which must differ from Alice’s) as well as his own dissection of his version of the segment. Alice will then respond by identifying a subsegment, posting an alternative endpoint for that segment, and dissecting it. This reduces the number of moves in the game by an additional factor of 2, because the size is cut by a factor of K for every move, rather than for every two moves.
 
