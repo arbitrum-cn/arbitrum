@@ -166,7 +166,7 @@ Rollup合约及其伙伴管理着整个rollup合约。 它们共同追踪Arbitru
 
 参与rollup协议的人成为_验证者_， 任何人都可以成为验证者。 有些验证者则会选择成为质押者——将以太质押进来，如果作弊将被罚没。 这些都做都是免许可的：任何人都可以成为验证者或质押者。
 
-Rollup协议的核心安全属性是_AnyTrust Guarantee_（“一诚则成”原理）：只要有一个诚实的验证者，那么整个链的正确运行就会有绝对的保证。 这意味着Arbitrum链的运行是与以太坊一样免信任的。 You, and you alone (or someone you hire) can force your transactions to be processed correctly. And that is true no matter how many malicious people are trying to stop you.
+Rollup协议的核心安全属性是_AnyTrust Guarantee_（“一诚则成”原理）：只要有一个诚实的验证者，那么整个链的正确运行就会有绝对的保证。 这意味着Arbitrum链的运行是与以太坊一样免信任的。 你或者你雇佣的人可以确保你的交易被正确处理。 不管有多少恶意的人都无法阻止你。
 
 ### Rollup链
 
@@ -281,9 +281,9 @@ EthBridge记录了当前所需要的质押数量。 正常情况下会与基础�
 
 我们会分两次讲述这部分的协议。 首先，会给出一个精简版，易于理解但效率不够高。 然后还会给出一个真实实现版本。
 
-### Dissection Protocol: Simplified Version
+### 分割协议：精简版
 
-Alice is defending the claim that starting with the state in the predecessor block, the state of the Virtual Machine can advance to the state specified in block A. Essentially she is claiming that the Virtual Machine can execute N instructions, and that that execution will consume M inbox messages and transform the hash of outputs from H’ to H.
+Alice为自己的主张辩护，她的主张是：从父区块的状态开始，虚拟机的状态可以前进至她所主张的区块A上的状态。本质上，她是在宣称，虚拟机可以执行N条指令，消耗M条收件箱中的信息并将哈希从H'转换为H。
 
 Alice’s first move requires her to dissect her claims about intermediate states between the beginning (0 instructions executed) and the end (N instructions executed). So we require Alice to divide her claim in half, and post the state at the half-way point, after N/2 instructions have been executed.
 
