@@ -662,10 +662,10 @@ Each of these four resources has a price, which may vary over time. The resource
 
 这两种资源的价格取决于L1燃气价格。 ArbOS不能直接获取L1的气体价格，所以它根据最近某些EthBridge交易支付的L1以太坊基本费用，获得平均值并估计L1气体价格。
 
-- The base price of an L2 transaction is set by each aggregator, using an Arbitrum precompile, subject to a system-wide maximum.
-- The base price of a unit of L1 calldata is just the estimated L1 gas price.
+- L2 交易的基本费用由每个聚合器设置，使用 Arbitrum 预编译，需符合全系统的最高限额。
+- 每单位 L1 calldata 价格就是估算的L1燃气价格。
 
-If the transaction was submitted by an aggregator, ArbOS collects these base fees for L2 tx and L1 calldata, and credits that amount immediately to the aggregator. ArbOS also adds a 15% markup and deposits those funds into the network fee account, to help cover overhead and other chain costs. If the transaction was not submitted by an aggregator, ArbOS collects only the 15% portion and credits that to the network fee account.
+如果交易是由聚合器提交的，ArbOS 会为 L2 tx 和 L1 calldata 收取这些基本费用，并将该金额立即记入聚合器。 ArbOS also adds a 15% markup and deposits those funds into the network fee account, to help cover overhead and other chain costs. If the transaction was not submitted by an aggregator, ArbOS collects only the 15% portion and credits that to the network fee account.
 
 In order for an aggregator to be reimbursed for submitting a transaction, three things must be true:
 
