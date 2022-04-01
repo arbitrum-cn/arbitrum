@@ -658,9 +658,9 @@ Fees are charged for four resources that a transaction can use:
 
 Each of these four resources has a price, which may vary over time. The resource prices, which are denominated in ETH (more precisely, in wei), are set as follows:
 
-#### Prices for L2 tx and L1 calldata
+#### L2 tx和L1 calldata
 
-The prices of the first two resources, L2 tx and L1 calldata, depend on the L1 gas price. ArbOS can’t directly see the L1 gas price, so it estimates the L1 gas prices, based on the L1 Ethereum base fee paid by certain recent EthBridge transactions.
+这两种资源的价格取决于L1燃气价格。 ArbOS不能直接获取L1的气体价格，所以它根据最近某些EthBridge交易支付的L1以太坊基本费用，获得平均值并估计L1气体价格。
 
 - The base price of an L2 transaction is set by each aggregator, using an Arbitrum precompile, subject to a system-wide maximum.
 - The base price of a unit of L1 calldata is just the estimated L1 gas price.
@@ -675,34 +675,34 @@ In order for an aggregator to be reimbursed for submitting a transaction, three 
 
 If these conditions are not all met, the transaction is treated as not submitted by an aggregator so only the network fee portion of the fee is collected.
 
-#### Price for storage
+#### 存储空间价格
 
-Transactions are charged a storage fee for allocating an EVM storage cell. (Here, "allocating" means changing the value in a cell from zero to a non-zero value, and "deallocating" means changing a cell from a non-zero to a zero value.)  If a cell was allocated within a transaction, and is later deallocated *within the same transaction*, the allocation fee will be refunded when the transaction completes.
+交易在分配一个EVM存储单元时被收取存储费。 (这里的"分配 "是指将一个单元的值从零变为非零值，"取消分配 "是指将一个单元的值从非零变为零）。  如果一个单元在一个交易中被分配，后来在同一个交易中被取消分配，分配费将在交易完成后被退还。
 
-Contract creation is charged one storage fee for every 32 bytes of code in the contract. However, if a newly created contract has the same deployed code as an already existing contract, ArbOS will usually detect this and keep only a single copy of the code, thereby saving the second contract from having to pay for code storage.
+合约创建时，对合约中每32字节的代码收取一个存储费。 然而，如果一个新创建的合约与一个已经存在的合约有相同的部署代码，ArbOS通常会检测到这一点，只保留一份代码副本，使第二个合约不必支付代码存储费。
 
-Each storage allocation costs 2000 times the estimated L1 gas price. This means that storage costs about 10% as much as it does on the L1 chain.
+每个存储分配成本是估计L1气体价格的2000倍。 这意味着存储成本大约是L1链上的10%。
 
-#### Price for ArbGas
+#### ArbGas价格
 
-ArbGas pricing depends on a minimum price, and a congestion pricing mechanism.
+ArbGas定价取决于最小价格，和拥堵价格模型。
 
-The minimum ArbGas price is set equal to the estimated L1 gas price divided by 100. The price of ArbGas will never go lower than this.
+最小ArbGas价格为预估的L1燃气价格除以100。 ArbGas的价格不可能比该值还低。
 
-The price will rise above the minimum if the chain is starting to get congested. The idea is similar to Ethereum, to deal with a risk of overload by raising the price of gas enough that demand will meet supply. The mechanism is inspired by Ethereum’s EIP-1559, which uses a base price that, at the beginning of each block, is multiplied by a factor between 7/8 and 9/8, depending on how busy the chain seems to be. When the demand seems to be exceeding supply, the factor will be more than 1; when supply exceeds demand, the factor will be less than 1. (But the price never goes below the minimum.)
+如果链开始拥堵了，价格就会上升。 该想法与以太坊的类似，都通过增加足够的燃气成本来调节供需，防止过载风险。 该机制受EIP-1559启发而来，EIP-1559在每个区块的开始时有一个基础价格，根据链的忙碌程度乘以7/8和9/8两个系数因子。 当需求超越供给，该系数因子会大于1；当供给超越需求时，该系数因子会小于1。 （但价格永不可能低于最小值。）
 
-The automatic adjustment mechanism depends on an “ArbGas pool” that is tracked by ArbOS. The ArbGas pool has a maximum capacity that is equal to 12 minutes of full-speed computation at the chain’s speed limit. ArbGas used by transactions is subtracted from the gas pool, and at the beginning of each new Ethereum block, ArbGas is added to the pool corresponding to full-speed execution for the number of timestamp seconds since the last block (subject to the maximum pool capacity).
+该动态调整机制基于ArbOS管理的“ArbGas池”。 ArbGas池的最大容量，等于以链全速运行12分钟的计算量。 交易所使用的ArbGas从该池中扣除，在每个新以太坊区块的起始，会根据对应的自上一个区块至今的时间戳秒数来向池中加入ArbGas（会受限于池的最大容量）。
 
-After adding the new gas to the pool, if the new gas pool size is G, the current ArbGas price is multiplied by (16200S - G) / (14400S) where S is the ArbGas speed limit of the chain. This quantity will be 7/8 when G = 720S (the maximum gas pool size) and it will be 9/8 when G = 0.
+在向池中增加了新的gas后，如果新的燃气池的大小是G，则当前的ArbGas价格会乘以(16200S - G) / (14400S) ，其中S是该链的速度上限。 当G=720S（最大池容量限制）时，这个数量将是7/8，当G=0时，它将是9/8。
 
-### The congestion limit
+### 拥挤限制
 
-The gas pool is also used to limit the amount of gas available to transactions at a particular timestamp. In particular, if a transaction could require more gas than is available in the gas pool, that transaction is rejected without being executed, returning a transaction receipt indicating that the transaction was dropped due to congestion. This prevents the chain from building up a backlog that is very long--if transactions are being submitted consistently faster than they can be validated, eventually the gas pool will become empty and transactions will be dropped. Meanwhile the transaction price will be escalating, so that the price mechanism will be able to bring supply and demand back into alignment.
+燃气池也用来限制在特定时间戳时可用的燃气数量。 具体来说，如果一个交易需要的气体超过气体池的可用量，该交易将被拒绝而不被执行，并返回一个交易收据，表明该交易由于拥堵而被放弃。 这防止了链上挤压过多的交易——如果交易提交速度一直比可验证的速度还快，最终燃气池会被清空，交易会被抛弃。 同时，交易价格也会增加，由该机制调节供需至平衡态。
 
-### ArbGas accounting and the second-price auction
+### ArbGas计量与二次出价竞拍
 
-As on Ethereum, Arbitrum transactions submit a maximum gas amount (here, “maxgas” for short) and a gas price bid (here, “gasbid” for short). A transaction will use up to its maxgas amount of gas, or will revert if more gas would be needed.
+像以太坊一样，Arbitrum交易也会提交一个最大燃气数量（此处简写为maxgas），以及燃气出价（简写为gasbid）。 一笔交易最多会动用到其声明的maxgas，如果不够则该交易会被回滚。
 
-On Ethereum, the gas price paid by a transaction is equal to its gasbid. Arbitrum, by contrast, treats the gasbid as the maximum amount the transaction is willing to pay for gas. The actual price paid is equal to the current Arbitrum ArbGas price, whatever that is, as long as it is less than or equal to the transaction’s gasbid. If the transaction’s gasbid is less than the current Arbitrum gas price, the transaction is dropped and a transaction receipt issued, saying that the transaction’s gasbid was too low.
+在以太坊上，一笔交易的燃气价格等于其声明的gasbid。 在Arbitrum则不同，gasbid会视作该交易所愿支付的最高价格。 实际支付的价格是当前Arbitrum的ArbGas价格，不论该值是多少，只要它低于该笔交易的gasbid即可。 如果gasbid低于当前当前的ArbGas价格，该交易会被拒绝，并报告被拒绝的交易结果是：gasbid太低。
 
-So Arbitrum transactions shouldn’t try to “game” their gasbid by trying to match it too closely to the current ArbGas price. Instead, transactions should set their gasbid equal to the maximum price they’re willing to pay for ArbGas, with the caveat that the sender must have at least gasbid\*maxgas in its L2 ETH account.
+所以在Arbitrum进行交易时，不应该去赌如何把gasbid压得尽可能低至当前ArbGas价格。 而是应该设置你愿意出的最高价格，同时需要注意发送者必须有至少 gasbid*maxgas ETH费用在其L2账户中。
