@@ -499,38 +499,38 @@ Arbitrum full nodes operate ["above the line"](#above-or-below-the-line), meanin
 
 One important role of a full node is serving as an aggregator, which means that the full node receives a set of signed transactions from users and assembles them into a batch which it submits to the chain’s inbox as a single unit. Submitting transactions in batches is more efficient than one-by-one submission, because each submission is an L1 transaction to the EthBridge, and Ethereum imposes a base cost of 21,000 L1 gas per transaction. Submitting a batch allows that fixed cost (and some other fixed costs) to be amortized across a larger group of user transactions. That said, submitting a batch is permissionless, so any user can, say, submit a single transaction "batch" if the need arises; Arbitrum thereby inherits the same censorship resistance as the Ethereum.
 
-### Compressing transactions
+### 压缩交易
 
-In addition to batching transactions, full nodes can also compress transactions to save on L1 calldata space. Compression is transparent to users and to contracts running on Arbitrum--they see only normal uncompressed transactions. The process works like this: the user submits a normal transaction to a full node; the full node compresses the transactions and submits it to the chain; ArbOS receives the transaction and uncompresses it to recover the original transaction; ArbOS verifies the signature on the transaction and processes the transaction.
+除了批量处理交易外，全节点还可以压缩交易来节省L1上的calldata空间。 压缩对于用户和合约来说是不可见的——它们只能看到未压缩的交易。 其工作流程为：用户向全节点提交了一个正常的交易；全节点将其压缩并提交给链；ArbOS收到这笔交易并将其解压缩，还原至正常交易；ArbOS会验证该笔交易的签名再处理交易。
 
-Compression can make the “header information” in a transaction much smaller. Full nodes typically use both compression and batching when submitting transactions.
+压缩减小了一笔交易的『头部信息』的体积。 全节点一般在提交交易时会同时使用压缩和批量处理。
 
-### Aggregator costs and fees
+### 聚合器成本和费用
 
-An aggregator that submits transactions on behalf of users will have costs due to the L1 transactions it uses to submit those transactions to the Inbox contract. Arbitrum includes a facility to collect fees from users, to reimburse the aggregator for its costs. This is detailed in the [ArbGas and Fees](#arbgas-and-fees) section.
+为用户提交交易的聚合器，由于需要在L1上向收件箱发送交易，是有成本的。 Arbitrum采用了一套向用户收费的机制来补偿聚合器的费用。 请见ArbGas和费用。
 
-## Sequencer Mode
+## 序列器模式
 
-Sequencer mode is an optional feature of Arbitrum chains, which can be turned on or off for each chain.  We expect it to be enabled for most chains. Arbitrum One uses a sequencer that is operated by Offchain Labs.
+序列器模式是Arbitrum链的一个可选特性，一条链既可以开启也可以关闭该特性。  我们希望它在大多数链上都能被启用。 Arbitrum One使用一个由Offchain Labs提供的序列器。
 
-The sequencer is a specially designated full node, which is given limited power to control the ordering of transactions. This allows the sequencer to guarantee the results of user transactions immediately, without needing to wait for anything to happen on Ethereum. So no need to wait five minutes or so for block confirmations--and no need to even wait 15 seconds for Ethereum to make a block.
+序列器是一个特别指定的全节点，被赋予有限的权力来控制交易的顺序。 这使得序列器可以立即保证用户交易的结果，而无需等待以太坊上发生任何事。 因此，不需要等待5分钟左右的区块确认--也不需要等待15秒一次以太坊新区块的生成。
 
-Clients interact with the sequencer in exactly the same way they would interact with any full node, for example by giving their wallet software a network URL that happens to point to the sequencer.
+客户端与序列器的通信是与全节点通信完全相同的。例如，给钱包提供网络URL就可以直接指向序列器。
 
-### Instant confirmation
+### 即时确认
 
-Without a sequencer, a node can predict what the results of a client transaction will be, but the node can't be sure, because it can't know or control how the transactions it submits will be ordered in the inbox, relative to transactions submitted by other nodes.
+没有序列器的情况下，全节点可以预测用户转账的结果，但却不能确定，因为还有其他节点向收件箱中提交交易，它并不知道在收件箱中这些交易会如何排序。
 
-The sequencer is given more control over ordering, so it has the power to assign its clients' transactions a position in the inbox queue, thereby ensuring that it can determine the results of client transactions immediately. The sequencer's power to reorder has limits (see below for details) but it does have more power than anyone else to influence transaction ordering.
+序列器有排序控制的能力，可以将交易分配在收件箱队列中的某个位置，由此可即刻确保用户的交易的结果。 序列器重新排序的能力是有限制的（详见下文），但它确实比其他任何人都更有能力影响交易排序。
 
-### Inboxes, fast and slow
+### 收件箱，快与慢
 
-When we add a sequencer, the operation of the inbox changes.
+当我们添加一个序列器时，收件箱的操作就会改变。
 
-* Only the sequencer can put new messages directly into the inbox. The sequencer tags the messages it is submitting with an Ethereum block number and timestamp. (ArbOS ensures that these are non-decreasing, adjusting them upward if necessary to avoid decreases.)
-* Anyone else can submit a message, but messages submitted by non-sequencer nodes will be put into the "delayed inbox" queue, which is managed by an L1 Ethereum contract.
-  * Messages in the delayed inbox queue will wait there until the sequencer chooses to "release" them into the main inbox, where they will be added to the end of the inbox.  A well-behaved sequencer will typically release delayed messages after about ten minutes, for reasons explained below.
-  * Alternatively, if a message has been in the delayed inbox queue for longer than a maximum delay interval (currently 24 hours) then anyone can force it to be promoted into the main inbox. (This ensures that the sequencer can only delay messages but can't censor them.)
+* 只有定序器可以将新消息直接放入收件箱。 序列器用以太坊区块号码和时间戳来标记它所提交的消息。 (ArbOS确保这些不会减少，如果有必要，会向上调整以避免减少)。
+* 其他任何人都可以提交消息，但非序器节点提交的消息将被放入“延迟收件箱”队列，该队列由 L1 以太坊合约管理。
+  * 延迟收件箱队列中的消息将在那里等待，直到排序器选择将它们 "释放 "到主收件箱，在那里它们将被添加到收件箱的末端。  行为良好的序列器通常在大约十分钟后释放延迟的消息，原因如下所述。
+  * 另外，如果一条消息在延迟收件箱队列中的时间，超过了最大延迟间隔（目前是24小时），那么任何人都可以强制将其提升到主收件箱中。 （这确保了序列器只能延迟消息，但不能审查它们。）
 
 ### 如果序列器是善意的
 
@@ -540,9 +540,9 @@ When we add a sequencer, the operation of the inbox changes.
 
 这确实意味着，通过延迟收件箱的交易将需要更长的时间来获得最终结果。 他们的最终确定时间将大致翻倍，因为他们将不得不等待一个最终确定期进行推广，然后再等待一个以太坊交易的最终确定期，以促进他们实现最终确定。
 
-这是使用定序器的基本权衡：如果你使用序列器，最终性则可提前C个区块，如果不使用序列器，最终性会延后C个区块。 This is usually a good tradeoff, because most transactions will use the sequencer; and because the practical difference between instant and 10-minute finality is bigger than the difference between 10-minute and 20-minute finality.
+这是使用定序器的基本权衡：如果你使用序列器，最终性则可提前C个区块，如果不使用序列器，最终性会延后C个区块。 这通常是一个很好的权衡，因为大多数交易都会使用排序器；因为瞬时总和来看，10分钟的最终结果之间的实际差异，比10分钟和20分钟的最终结果之间的差异更大。
 
-So a sequencer is generally a win, if the sequencer is well behaved.
+所以通常来说，如果序列器是善意的，则序列器是非常有益的。
 
 ### 如果序列器是恶意的
 
