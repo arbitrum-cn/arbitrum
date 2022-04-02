@@ -665,13 +665,13 @@ Each of these four resources has a price, which may vary over time. The resource
 - L2 交易的基本费用由每个聚合器设置，使用 Arbitrum 预编译，需符合全系统的最高限额。
 - 每单位 L1 calldata 价格就是估算的L1燃气价格。
 
-如果交易是由聚合器提交的，ArbOS 会为 L2 tx 和 L1 calldata 收取这些基本费用，并将该金额立即记入聚合器。 ArbOS also adds a 15% markup and deposits those funds into the network fee account, to help cover overhead and other chain costs. If the transaction was not submitted by an aggregator, ArbOS collects only the 15% portion and credits that to the network fee account.
+如果转账是由聚合器提交的，ArbOS会搜集L2 tx和L1 calldata的基础费用，并立即划转给聚合器。 ArbOS也会多收取15%的费用，并将其存入网络费用账户中，来为经常性开支和其他成本所用。 如果该交易不是由聚合器提交的，ArbOS只会收取多的15%那部分并提交给网络费用池。
 
-In order for an aggregator to be reimbursed for submitting a transaction, three things must be true:
+为了能补偿聚合器提交交易的成本，下列三点需为真实：
 
-1. The transaction’s nonce is correct. [This prevents an aggregator from resubmitting a transaction to collect multiple reimbursements for it.]
-2. The transaction’s sender has ETH in its L2 account to pay the fees.
-3. The aggregator is listed as the sender’s “preferred aggregator”. (ArbOS records a preferred aggregator for each account, with the default being a specific aggregator address. On Arbitrum One, the default aggregator is the sequencer run by Offchain Labs.) [The preferred aggregator mechanism prevents an aggregator from front-running another aggregator’s batches to steal its reimbursements.]
+1. 交易的nounce是正确的。 [ 防止聚合器重放骗补。]
+2. 该笔交易的sender在L2上有ETH，以支付费用。
+3. 该聚合器是该sender的『委托聚合器』。 （ArbOS为每个账户都记录了其委托聚合器。 On Arbitrum One, the default aggregator is the sequencer run by Offchain Labs.) [The preferred aggregator mechanism prevents an aggregator from front-running another aggregator’s batches to steal its reimbursements.]
 
 If these conditions are not all met, the transaction is treated as not submitted by an aggregator so only the network fee portion of the fee is collected.
 
