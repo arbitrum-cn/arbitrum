@@ -532,45 +532,45 @@ When we add a sequencer, the operation of the inbox changes.
   * Messages in the delayed inbox queue will wait there until the sequencer chooses to "release" them into the main inbox, where they will be added to the end of the inbox.  A well-behaved sequencer will typically release delayed messages after about ten minutes, for reasons explained below.
   * Alternatively, if a message has been in the delayed inbox queue for longer than a maximum delay interval (currently 24 hours) then anyone can force it to be promoted into the main inbox. (This ensures that the sequencer can only delay messages but can't censor them.)
 
-### If the sequencer is well-behaved...
+### 如果序列器是善意的
 
-A well-behaved sequencer will accept transactions from all requesters and treat them fairly, giving each one a promised transaction result as quickly as it can.
+一个善意的序列器会接收所有请求者的交易并公平对待，给予每个用于尽可能快地提供交易结果。
 
-It will also minimize the delay it imposes on non-sequencer transactions by releasing delayed messages promptly, consistent with the goal of providing strong promises of transaction results. Specifically, if the sequencer believes that 40 confirmation blocks are needed to have good confidence of finality on Ethereum, then it will release delayed messages after 40 blocks. This is enough to ensure that the sequencer knows exactly which transactions will precede its current transaction, because those preceding transactions have finality. There is no need for a benign sequencer to delay non-sequencer messages more than that, so it won't.
+它还将通过及时释放延迟信息，将其对非序列化交易的延迟降到最低，这与提供交易结果的有力承诺目标是一致的。 比如说，如果序列器认为在以太坊上完成最终性需要40个区块，那它就会将交易向前调整40个区块。 这已经足够确保了序列器精确地了解当前交易之前的交易是哪些，因为之前的交易已经有了最终性。 对于善意的序列器来说不需要前调更多，所以它不会这么做。
 
-This does mean that transactions that go through the delayed inbox will take longer to get finality. Their time to finality will roughly double, because they will have to wait one finality period for promotion, then another finality period for the Ethereum transaction that promoted them to achieve finality.
+这确实意味着，通过延迟收件箱的交易将需要更长的时间来获得最终结果。 他们的最终确定时间将大致翻倍，因为他们将不得不等待一个最终确定期进行推广，然后再等待一个以太坊交易的最终确定期，以促进他们实现最终确定。
 
-This is the basic tradeoff of having a sequencer: if your message uses the sequencer, finality is C blocks faster; but if your message doesn't use the sequencer, finality is C blocks slower. This is usually a good tradeoff, because most transactions will use the sequencer; and because the practical difference between instant and 10-minute finality is bigger than the difference between 10-minute and 20-minute finality.
+这是使用定序器的基本权衡：如果你使用序列器，最终性则可提前C个区块，如果不使用序列器，最终性会延后C个区块。 This is usually a good tradeoff, because most transactions will use the sequencer; and because the practical difference between instant and 10-minute finality is bigger than the difference between 10-minute and 20-minute finality.
 
 So a sequencer is generally a win, if the sequencer is well behaved.
 
-### If the sequencer is malicious...
+### 如果序列器是恶意的
 
-A malicious sequencer, on the other hand, could cause some pain. If it refuses to handle your transactions, you're forced to go through the delayed inbox, with longer delay. And a malicious sequencer has great power to front-run everyone's transactions, so it could profit greatly at users' expense.
+另一方面看，如果序列器是恶意的，确实会造成一些损害。 如果它拒绝提交你的交易，你就不得不在常规收件箱中等待更久。 并且，恶意的序列器有强大的能力来抢跑每个人的交易，以用户为代价获得暴利。
 
-On Arbitrum One, Offchain Labs runs a sequencer which is well-behaved--we promise!. This will be useful but it's not decentralized. Over time, we'll switch to decentralized, fair sequencing, as described below.
+在主网上线时，Offchain Labs会自己运行一个善意的序列器。 这是实用的，但并不是去中心化的。 过一段时间，我们会切换到去中心化的，公正的序列器，下方详述。
 
-Because the sequencer will be run by a trusted party at first, and will be decentralized later, we haven't built in a mechanism to directly punish a misbehaving sequencer. We're asking users to trust the centralized sequencer at first, until we switch to decentralized fair sequencing later.
+由于当前序列器在最开始是由可信任的第三方运行的，之后才会去中心化，所以我们目前还没有内建机制来惩罚恶意序列器。 我们要求用户先信任中心化的序列器，直至我们后面采用去中心化的公正的序列器。
 
-### Decentralized fair sequencing
+### 去中心化公正序列器
 
-Viewed from 30,000 feet, decentralized fair sequencing isn't too complicated. Instead of being a single centralized server, the sequencer is a committee of servers, and as long as a large enough supermajority of the committee is honest, the sequencer will establish a fair ordering over transactions.
+从大角度上看，去中心化序列器并不复杂。 我们不使用单一的中心化服务器，而使用一组服务器构成的委员会，只要委员会中三分之二的人是诚实的，序列器总能建立公正的交易排序。
 
-How to achieve this is more complicated. Research by a team at Cornell Tech, including Offchain Labs CEO and Co-founder Steven Goldfeder, developed the first-ever decentralized fair sequencing algorithm. With some improvements that are under development, these concepts will form the basis for our longer-term solution, of a fair decentralized sequencer.
+但如何实现这一点是复杂的。 Cornell Tech的研发团队，包含Offchain Labs的CEO和联合创始人Steven Goldfeder，开发出了第一个去中心化序列器算法。 随着不断的发展，这些理念会成为去中心化序列器的长久解决方案的基础。
 
-## Bridging
+## 桥接
 
-We have already covered how users interact with L2 contracts--they submit transactions by putting messages into the chain’s inbox, or having a full node sequencer or aggregator do so on their behalf. Let’s talk about how contracts interact between L1 and L2--how an L1 contract calls an L2 contract, and vice versa.
+我们已经讲述了用户如何与L2合约互动——用户把信息放入收件箱中来提交交易，或者由全节点聚合器为其代劳。 那我们再说一下L1和L2合约相互间是如何调用的。
 
-The L1 and L2 chains run asynchronously from each other, so it is not possible to make a cross-chain call that produces a result within the same transaction as the caller. Instead, cross-chain calls must be asynchronous, meaning that the caller submits the call at some point in time, and the call runs later. As a consequence, a cross-chain contract-to-contract call can never produce a result that is available to the calling contract (except for acknowledgement that the call was successfully submitted for later execution).
+L1和L2链的运行是异步的，所以跨链调用是不可能得到与调用者处在同一个交易中的结果的。 相反，跨链调用必须是异步的，这意味着调用者在某个时间发起调用，然后该调用等一会之后才执行。 因此，跨链的合约到合约的调用不可能产生对调用合约可见的结果（它只能知道调用提交成功了，之后会被执行）。
 
-### L1 contracts can submit L2 transactions
+### L1合约可以提交L2交易
 
-An L1 contract can submit an L2 transaction, just like a user would, by calling the EthBridge. This L2 transaction will run later, producing results that will not be available to the L1 caller. The transaction will execute at L2, but the L1 caller won’t be able to see any results from the L2 transaction.
+像用户一样，一个L1合约可以通过EthBridge提交L2交易。 该L2交易会之后执行，其产生的结果对L1调用者来说是不可见的。 该交易会在L2上有L1调用者相同的以太坊区块高度和时间戳，但L1调用者无法在该交易中看到任何结果。
 
-The advantage of this method is that it is simple and has relatively low latency. The disadvantage, compared to the other method we’ll describe soon, is that the L2 transaction might revert if the L1 caller doesn’t get the L2 gas price and max gas amount right. Because the L1 caller can’t see the result of its L2 transaction, it can’t be absolutely sure that its L2 transaction will succeed.
+该方法的好处是，简单，低延迟。 劣势是，和其他我们描述的方法相比，L2交易有可能由于L1调用者没有取得正确的L2 gas price和max gas amount而被回滚。 由于L1调用者看不到其L2交易结果，它无法确定该L2调用是否成功。
 
-This would introduce a serious a problem for certain types of L1 to L2 interactions. Consider a transaction that includes depositing a token on L1 to be made available at some address on L2. If the L1 side succeeds, but the L2 side reverts, you've just sent some tokens to the L1 inbox contract that are unrecoverable on either L2 or L1. Not good.
+这种情况会对一些特定类型的L1到L2的调用带来严重问题。 当你考虑在 L1 上存入一个代币，以便在 L2 上的某个地址可用。 如果L1上成功了但L2上回滚了，就导致你的代币被锁定到L1收件箱中而L2上什么也没有，在L1和L2上都不能恢复。 这是非常可怕的。
 
 ### L1到L2基于票据的交易
 
@@ -578,15 +578,15 @@ This would introduce a serious a problem for certain types of L1 to L2 interacti
 
 预包装的交易包括发送者的地址、目的地址、呼叫值和通话数据。 所有这些都被保存下来，呼叫值从发送者的账户中扣除，并（从逻辑上）附加到预包装的交易中。
 
-如果赎回成功了，该交易就完成了，同时返还一个交易结果，并且ticketID就失效了不能再次使用。 If the redemption fails, for example because the packaged transaction fails, the redemption reports failure and the ticketID remains available for redemption.
+如果赎回成功了，该交易就完成了，同时返还一个交易结果，并且ticketID就失效了不能再次使用。 如果赎回失败，比如是因为打包好的交易失败了，该赎回会返回错误，该ticketID还能继续使用。
 
-As an option (and by default), the original submitter can try to redeem their submitted transaction immediately, at the time of its submission, in the hope that this redemption will succeed. As an example, our "token deposit" use case above should, in the happy, common case, still only require a single signature from the user. If this instant redemption fails, the ticketID will still exist as a backstop which others can redeem later.
+作为一个可选项（我们认为这应该是默认的），在提交交易时原提交者应期望赎回会成功，并尝试在提交交易后立即赎回。 因此，在上述的“代币充值”例子中，在乐观正常的情况下，只需要用户的单次签名。 如果即刻赎回失败了，该ticketID仍然有效，其他人之后可以帮其执行。
 
-Submitting a transaction in this way carries a price in ETH which the submitter must pay, which varies based on the calldata size of the transaction. Once submitted, the ticket is valid for about a week. It will remain valid after that, as long as someone pays weekly rent to keep it alive. If the rent goes unpaid and the ticket has not been redeemed, it is deleted.
+通过这种方式提交的交易，会要求提交者必须发送一定数量的ETH，其数量由交易的calldata大小确定。 一经提交，该票据在一周内有效。 只要有人每周为其支付租金，那就可以一直有效。 如果租金未支付，票据还没赎回，就会被删除。
 
-When the ticket is redeemed, the pre-packaged transaction runs with sender and origin equal to the original submitter, and with the destination, callvalue, and calldata the submitter provided at the time of submission. (The submitter can specify an address to which the callvalue will be refunded if the transaction is dropped for lack of rent without ever being redeemed.)
+票据赎回时还有各种信息，发送者和原提交者，destination，callvalue，以及提交者在提交时提供的calldata目的地相同。 (提交者可以指定一个地址，如果交易因缺乏租金被放弃，而没有被赎回，那么callvalue将被退还。)
 
-This rent-based mechanism is a bit more cumbersome than direct L1 to L2 transactions, but it has the advantage that the submission cost is predictable and the ticket will always be available for redemption if the submission cost is paid. As long as there is some user who is willing to redeem the ticket (and pay rent if needed), the L2 transaction will eventually be able to execute and will not be silently dropped.
+票据机制比直接的L1到L2交易更加复杂，不过其优势是提交成本是可预测的，票据在提交成本支付后是一直可赎回的。 只要有用户愿意赎回该票据（如果需要并支付租金），该L2交易最终总会被执行，而不会被无故丢弃。
 
 ### L2到L1基于票据的调用
 
