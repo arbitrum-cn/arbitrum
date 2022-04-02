@@ -572,13 +572,13 @@ The advantage of this method is that it is simple and has relatively low latency
 
 This would introduce a serious a problem for certain types of L1 to L2 interactions. Consider a transaction that includes depositing a token on L1 to be made available at some address on L2. If the L1 side succeeds, but the L2 side reverts, you've just sent some tokens to the L1 inbox contract that are unrecoverable on either L2 or L1. Not good.
 
-### L1 to L2 ticket-based transactions
+### L1到L2基于票据的交易
 
-Fortunately, we have another method for L1 to L2 calls, which is more robust against gas-related failures, that uses a ticket-based system. The idea is that an L1 contract can submit a “pre-packaged” transaction and immediately receive a “ticketID” that identifies that submission. Later, anyone can call a special pre-compiled contract at L2, providing the ticketID, to try redeeming the ticket and executing the transaction.
+幸好，我们有另一种方法用于L1到L2的调用，这种方法对于 Gas有关的故障更为稳健，这就是基于票据的交易系统。 其设想是，L1合约可以提交一个『预打包』的交易并立刻收到一个该交易的『ticketID』。 之后，任何人都可以在L2上通过一个特殊的预编译合约，凭借ticketID，来赎回该票据并执行其交易。
 
-The pre-packaged transaction includes the sender’s address, a destination address, a callvalue, and calldata. All of this is saved, and the callvalue is deducted from the sender’s account and (logically) attached to the pre-packaged transaction.
+预包装的交易包括发送者的地址、目的地址、呼叫值和通话数据。 所有这些都被保存下来，呼叫值从发送者的账户中扣除，并（从逻辑上）附加到预包装的交易中。
 
-If the redemption succeeds, the transaction is done, a receipt is issued for it, and the ticketID is canceled and can’t be used again. If the redemption fails, for example because the packaged transaction fails, the redemption reports failure and the ticketID remains available for redemption.
+如果赎回成功了，该交易就完成了，同时返还一个交易结果，并且ticketID就失效了不能再次使用。 If the redemption fails, for example because the packaged transaction fails, the redemption reports failure and the ticketID remains available for redemption.
 
 As an option (and by default), the original submitter can try to redeem their submitted transaction immediately, at the time of its submission, in the hope that this redemption will succeed. As an example, our "token deposit" use case above should, in the happy, common case, still only require a single signature from the user. If this instant redemption fails, the ticketID will still exist as a backstop which others can redeem later.
 
@@ -588,37 +588,37 @@ When the ticket is redeemed, the pre-packaged transaction runs with sender and o
 
 This rent-based mechanism is a bit more cumbersome than direct L1 to L2 transactions, but it has the advantage that the submission cost is predictable and the ticket will always be available for redemption if the submission cost is paid. As long as there is some user who is willing to redeem the ticket (and pay rent if needed), the L2 transaction will eventually be able to execute and will not be silently dropped.
 
-### L2 to L1 ticket-based calls
+### L2到L1基于票据的调用
 
-Calls from L2 to L1 operate in a similar way, with a ticket-based system. An L2 contract can call a method of the precompiled ArbSys contract, to send a transaction to L1. When the execution of the L2 transaction containing the submission is confirmed at L1 (some days later), a ticket is created in the EthBridge. That ticket can be triggered by anyone who calls a certain L1 EthBridge method and submits the ticketID. The ticket is only marked as redeemed if the L1 transaction does not revert.
+从L2到L1的操作是相同的，也基于票据。 L2合约可以调用预编译的ArbSys合约中的方法，来向L1发送交易。 当L2包含了提交的交易在L1上确认其执行后，EthBridge会为其创建一张票据。 该票据可以被任何人凭借ticketID通过特定的EthBridge方法调用。 只有在L1交易没有回滚时才会被标记为已赎回。
 
-These L2-to-L1 tickets have unlimited lifetime, until they’re successfully redeemed. No rent is required, as the costs are covered by network fees that are collected elsewhere in Arbitrum.
+这些票据的寿命是无限长的，直至被成功赎回。 也不需要为其支付租金，因为其成本已被在Arbitrum其余地方搜集的网络覆盖了。
 
-## Gas and Fees
+## ArbGas和费用
 
-ArbGas is used by Arbitrum to track the cost of execution on an Arbitrum chain. It is similar in concept to Ethereum gas, in the sense that every Arbitrum Virtual Machine instruction has an ArbGas cost, and the cost of a computation is the sum of the ArbGas costs of the instructions in it.
+ArbGas是Arbitrum用来管理链上执行成本的。 与以太坊gas的理念一致，每个AVM指令都会有一定数量的ArbGas消耗，而一次运算的总成本是该运算包含的指令的ArbGas的加总。
 
-ArbGas is not directly comparable to Ethereum gas. In general an Arbitrum chain can consume many more ArbGas units per second of computation, compared to the number of Ethereum gas units in Ethereum's gas limit. Developers and users should think of ArbGas as much more plentiful and much cheaper per unit than Ethereum gas.
+ArbGas并不能直接与以太坊gas相比。 Arbitrum并没有硬性的ArbGas limit，正常情况下Arbitrum链每秒可以消耗任意数量的ArbGas，而在以太坊中则有gas limit。 开发者和用户应该把ArbGas理解为是比以太坊gas更加丰饶且便宜的。
 
-[A note on terminology: In reality, there are two related notions of gas in Arbitrum: AVM gas which is tracked by the virtual machine execution, and ArbGas which is used in the the API. The two are strictly related because 1 ArbGas = 100 AVM gas.  To simplify the discussion, this section uses the single term ArbGas and ignores the factor-of-100 conversions that are done correctly by the Arbitrum code.]
+[关于术语的注释：实际上，Arbitrum中有两个相关的气体概念，AVM gas是由虚拟机执行跟踪的，而ArbGas是用于API的。 两者是密切相关的，因为1个ArbGas=100个AVM气体。  为了简化讨论，本节使用单项 ArbGas 并忽略由 Arbitrum 代码正确完成的 100 因子转换。]
 
-### Why ArbGas?
+### 为什么选择 ArbGas？
 
-One of the design principles of the Arbitrum Virtual Machine (AVM) is that every instruction should take a predictable amount of time to validate, prove, and proof-check. As a corollary, we want a way to count or estimate the time required to validate any computation.
+AVM的设计原则之一是，每个指令都应该对验证、证明和证据检验有可预测的执行时间。 这就导致我们需要一种方式来计量或估算验证任何运算的时间。
 
-There are two reasons for this. First, we want to ensure that proof-checking has a predictable cost, so we can predict how much L1 gas is needed by the EthBridge and ensure that the EthBridge will never come anywhere close to the L1 gas limit.
+有两个原因。 第一，我们需要确保证据检验有可预测的成本，这样就能预测EthBridge需要多少L1 gas，以确保EthBridge不会接近L1的gas limit。
 
-Second, accurate estimation of validation time is important to maximize the throughput of a rollup chain, because it allows us to set the chain's speed limit safely.
+第二，精确的验证时间估算对最大化rollup链的吞吐量是很重要的，因为可以帮我们安全地确定链的速度限制。
 
-### ArbGas in rollup blocks
+### Rollup区块中的ArbGas
 
-Every rollup block includes an amount of ArbGas used by the computation so far, which implies an amount used since the predecessor rollup block. Like everything else in the rollup block, this value is only a claim made by the staker who created the block, and the block will be defeatable in a challenge if the claim is wrong.
+每个rollup区块中都包含了迄今为止运算使用的ArbGas，这其中也暗含着自上一个rollup区块以来所消耗的ArbGas数量。 像rollup区块中其他东西一样，该值只是由创建该区块的质押者提供的，如果其断言是错误的该区块仍会在挑战中被拒绝。
 
-Although the ArbGas value in a rollup block might not be correct, it can be used reliably as a limit on how much computation is required to validate the block. This is true because a validator who is checking the block can cut off their computation after that much ArbGas has been consumed; if that much ArbGas has been consumed without reaching the end of the rollup block, then the rollup block must be wrong and the checker can safely challenge it. For this reason, the rollup protocol can safely use the ArbGas claim in a rollup block, minus the amount in the predecessor block, as an upper bound on the time required to validate the rollup block’s correctness.
+即使rollup区块中的ArbGas值可能是错误的，但还是可以可靠地作为用来估算该区块所需计算的上限。 因为，检查该区块的验证者可以在所主张的ArbGas耗尽后就停止运算；如果所主张的ArbGas耗尽后运算还未终止，该rollup区块肯定是错的，检查者就可以安全地挑战它。 因此，rollup协议就可以安全地使用rollup区块中对ArbGas的主张，减去之前区块中ArbGas的数量，作为验证该区块正确性的所需时间上限。
 
-A rollup block can safely be challenged even if the ArbGas usage is the only aspect of the block that is false. When a claim is bisected, the claims will include (claimed) ArbGas usages, which must sum to the ArbGas usage of the parent claim. It follows that if the claim's ArbGas amount is wrong, at least one of the sub-claims must have a wrong ArbGas amount. So a challenger who knows that a claim's ArbGas amount is wrong will always be able to find a sub-claim that has a wrong ArbGas amount.
+即使某个区块只有ArbGas这一个数据是错的，对该rollup区块进行挑战也是安全的。 当对一个断言二分后，该断言会包含所主张的ArbGas使用情况，其总和必须等于父断言的ArbGas消耗量。 如果一个断言的ArbGas数量是错的，那么至少有一个子断言的ArbGas是错的。 所以挑战者知道某个断言的ArbGas是错的，他一定能找出某个分段的ArbGas是错的。
 
-Eventually the dispute will get down to a single AVM instruction, with a claim about that instruction's ArbGas usage. One-step proof verification checks if this claim is correct. So a wrong ArbGas claim in a rollup block can be pursued all the way down to a single instruction with a wrong ArbGas amount--and then the wrongness will be detected by the one-step proof verification in the EthBridge.
+最终争议会走到单条AVM指令，以及关于该指令的ArbGas断言。 单步证明会检查该断言是否正确。 因此，rollup区块中错误的 ArbGas 断言最终都能追查到错误 ArbGas 数量的单步指令，然后再通过 EthBridge 的单步验证进行检测。
 
 ### AVM中的ArbGas计量
 
@@ -631,11 +631,11 @@ AVM也在内部处理ArbGas，它会使用ArbGasRemaining寄存器进行计量�
 
 该机制确保了ArbOS能够控制并计算应用代码需要消耗的ArbGas。 在调用该应用之前，ArbOS可以通过将寄存器设置至N来限制应用的调用至N个ArbGas，如果有out-of-ArbGas错误产生则接收该错误。 在运行错误处理程序开始时，ArbOS将读取AVM气体剩余寄存器，然后将该寄存器设置为MaxUint256，以确保错误处理程序不会耗尽ArbGas。 如果读取寄存器的值接近于MaxInt256，那么一定是应用程序产生了Out-of-ArbGas错误。 （可能是应用程序生成了一个不同的错误，而仍有少量 ArbGas，然后在错误处理程序的最开始出现一个 out-of-ArbGas 错误。 在这种情况下，第二个错误会将ArbGasRemaining设置为MaxInt256并将控制器返回给错误处理器的开头，导致错误处理器认为是该程序导致的out-of-ArbGas错误。 我们认为这种合理的行为是正确的。）
 
-If the application code returns control to the runtime without generating an out-of-ArbGas error, the runtime can read the AVM Gas Remaining register and subtract to determine how much ArbGas the application call used. This can be charged to the application's account.
+如果程序在没有错误产生的情况下将控制器返回给了运行时，运行时就可以读取AVM ArbGas Remaining寄存器来确定程序调用消耗了多少ArbGas。 并充值进程序的账户中。
 
-The runtime can safely ignore the ArbGas accounting mechanism. If the special instructions are never used, the register will be set to MaxInt256, and will decrease but in practice will never get to zero, so no error will ever be generated.
+运行时可以安全地忽略掉ArbGas计量机制。 如果没有使用过特殊指令，寄存器会被设置为MaxInt256，其值会减少但实践中不可能到0，所以不会有错误产生。
 
-The translator that turns EVM code into equivalent AVM code will never generate the instruction that sets the ArbGasRemaining register, so untrusted code cannot manipulate its own gas allocation.
+EVM到AVM的翻译器不会使用任何设置该寄存器的指令，所以不受信任的代码无法操纵其gas分配。
 
 ### 速度上限
 
