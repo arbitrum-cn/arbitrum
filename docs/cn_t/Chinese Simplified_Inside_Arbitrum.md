@@ -620,12 +620,12 @@ A rollup block can safely be challenged even if the ArbGas usage is the only asp
 
 Eventually the dispute will get down to a single AVM instruction, with a claim about that instruction's ArbGas usage. One-step proof verification checks if this claim is correct. So a wrong ArbGas claim in a rollup block can be pursued all the way down to a single instruction with a wrong ArbGas amount--and then the wrongness will be detected by the one-step proof verification in the EthBridge.
 
-### ArbGas accounting in the AVM
+### AVM中的ArbGas计量
 
-The AVM architecture also does ArbGas accounting internally, using a machine register called AVM Gas Remaining, which is a 256-bit unsigned integer that behaves as follows:
+AVM也在内部处理ArbGas，它会使用ArbGasRemaining寄存器进行计量，该寄存器是一个256位的无符号整数，行为如下：
 
-- The register is initially set to MaxUint256.
-- Immediately before any instruction executes, that instruction's AVM gas cost is subtracted from the register. If this would make the register's value less than zero, an error is generated and the register's value is set to MaxUint256. (The error causes a control transfer as specified in the AVM specification.)
+- 该寄存器初始值为MaxUint256
+- 在执行任何指令之前，该指令的ArbGas会即刻从寄存器中扣除。 If this would make the register's value less than zero, an error is generated and the register's value is set to MaxUint256. (The error causes a control transfer as specified in the AVM specification.)
 - A special instruction can be used to read the register's value.
 - Another special instruction can be used to set the register to any desired value.
 
@@ -637,26 +637,26 @@ The runtime can safely ignore the ArbGas accounting mechanism. If the special in
 
 The translator that turns EVM code into equivalent AVM code will never generate the instruction that sets the ArbGasRemaining register, so untrusted code cannot manipulate its own gas allocation.
 
-### The Speed Limit
+### 速度上限
 
-The security of Arbitrum chains depends on the assumption that when one validator creates a rollup block, other validators will check it and issue a challenge if it is wrong. This requires that the other validators have the time and resources to check each rollup block in time to issue a timely challenge. The Arbitrum protocol takes this into account in setting deadlines for rollup blocks.
+Arbitrum链的安全依赖于一个假设，当一名验证着创建一个rollup区块时，其他验证着会对其进行检测，如果有错误则发起挑战。 这需要其他验证者有时间和资源来检查每个rollup区块并及时提出挑战。 Arbitrum协议把该项作为设置rollup区块挑战截止时间的考虑因素。
 
-This sets an effective speed limit on execution of an Arbitrum VM: in the long run the VM cannot make progress faster than a validator can emulate its execution. If rollup blocks are published at a rate faster than the speed limit, their deadlines will get farther and farther in the future. Due to the limit, enforced by the rollup protocol contracts, on how far in the future a deadline can be, this will eventually cause new rollup blocks to be slowed down, thereby enforcing the effective speed limit.
+这就给AVM的运行设置了实际的速度上限：长远来看VM不可能运行地比验证者检验速度还要快。 如果rollup区块的发布速度比速度上限还快，那截止时间在未来就会越来越长。 由于rollup合约强加未来截止时间最多有多长的限制，最终会使新的rollup区块生成变慢，来确保实际的速度上限。
 
-Being able to set the speed limit accurately depends on being able to estimate the time required to validate an AVM computation, with some accuracy. Any uncertainty in estimating validation time will force us to set the speed limit lower, to be safe. And we do not want to set the speed limit lower, so we try to enable accurate estimation.
+能够准确地设置速度限制取决于能够以一定的准确性估计验证 AVM 计算所需的时间。 安全起见，任何在验证时间估算方面的不确定性都迫使我们把速度上限设置得低一些。 而我们确实不想把速度上限设低，所以会尝试精确的估算。
 
-### Fees
+### 费用
 
-User transactions pay fees, to cover the cost of operating the chain. These fees are assessed and collected by ArbOS at L2. They are denominated in ETH. Some of the fees are immediately paid to the aggregator who submitted the transaction (if there is one, and subject to some limitations discussed below). The rest go into a network fee pool that is used to pay service providers who help to enable the chain’s secure operation, such as validators.
+用户交易支付费用，以支付运营链的成本。 这些费用由 ArbOS 在 L2 评估和收取。 以ETH计价。 其中一部分费用会立即支付给提交该笔交易的聚合器（如果有的话。并且这也受到一些限制，下面会讨论）。 另一部分则进入了网络费用资金池中，用来支付一些保障链安全运行的服务提供者，如验证者。
 
-Fees are charged for four resources that a transaction can use:
+一笔交易会为四种资源交费：
 
-- _L2 tx_: a base fee for each L2 transaction, to cover the cost of servicing a transaction
-- _L1 calldata_: a fee per units of L1 calldata directly attributable to the transaction (as on Ethereum, each non-zero byte of calldata is 16 units, and each zero byte of calldata is 4 units)
-- _computation_: a fee per unit of ArbGas used by the transaction
-- _storage_: a fee per location of EVM contract storage, based change in EVM storage usage due to the transaction
+- L2 tx：每个L2交易的基础费用，支付交易的服务成本
+- L1 calldata：该交易对应的每单位L1 calldata的费用（每个非0字节的calldata都是16单位的，每个0字节的calldata都是4个单位）
+- 运算：该交易所使用的每单位ArbGas的费用
+- 存储：每单位EVM存储空间的费用，由该交易所增加的净EVM空间计算
 
-Each of these four resources has a price, which may vary over time. The resource prices, which are denominated in ETH (more precisely, in wei), are set as follows:
+这四种资源中每一种都有价格，价格可能会随着时间而变化。 其价格以ETH计量（准确的说是wei），设置如下：
 
 #### L2 tx和L1 calldata
 
@@ -671,9 +671,9 @@ Each of these four resources has a price, which may vary over time. The resource
 
 1. 交易的nounce是正确的。 [ 防止聚合器重放骗补。]
 2. 该笔交易的sender在L2上有ETH，以支付费用。
-3. 该聚合器是该sender的『委托聚合器』。 （ArbOS为每个账户都记录了其委托聚合器。 On Arbitrum One, the default aggregator is the sequencer run by Offchain Labs.) [The preferred aggregator mechanism prevents an aggregator from front-running another aggregator’s batches to steal its reimbursements.]
+3. 该聚合器是该sender的『委托聚合器』。 （ArbOS为每个账户都记录了其委托聚合器。 在 Arbitrum One 上，默认聚合器是 Offchain Labs 运行的排序器。） [ 防止其他聚合器抢跑某聚合器的批次交易并偷走其补贴。]
 
-If these conditions are not all met, the transaction is treated as not submitted by an aggregator so only the network fee portion of the fee is collected.
+如果这些条件未全部满足，该交易就不会走聚合器，只会被收取网络资金池的那部分费用。
 
 #### 存储空间价格
 
