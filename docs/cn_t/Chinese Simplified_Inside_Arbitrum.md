@@ -625,11 +625,11 @@ Eventually the dispute will get down to a single AVM instruction, with a claim a
 AVM也在内部处理ArbGas，它会使用ArbGasRemaining寄存器进行计量，该寄存器是一个256位的无符号整数，行为如下：
 
 - 该寄存器初始值为MaxUint256
-- 在执行任何指令之前，该指令的ArbGas会即刻从寄存器中扣除。 If this would make the register's value less than zero, an error is generated and the register's value is set to MaxUint256. (The error causes a control transfer as specified in the AVM specification.)
-- A special instruction can be used to read the register's value.
-- Another special instruction can be used to set the register to any desired value.
+- 在执行任何指令之前，该指令的ArbGas会即刻从寄存器中扣除。 如果这使寄存器的值小于0，会抛出错误并将寄存器重设为MaxUint256。 （在AVM规范中说明了该错误会导致的控制权转移。）
+- 有一条特殊指令可以读取该寄存器的值。
+- 还有一条特殊指令可以将该寄存器的值设置为任意值。
 
-This mechanism allows ArbOS to control and account for the ArbGas usage of application code. ArbOS can limit an application call's use of ArbGas to N units by setting the register to N before calling the application, then catching the out-of-ArbGas error if it is generated. At the beginning of the runtime's error-handler, ArbOS would read the AVM Gas Remaining register, then set the register to MaxUint256 to ensure that the error-handler could not run out of ArbGas. If the read of the register gave a value close to MaxInt256, then it must be the case that the application generated an out-of-ArbGas error. (It could be the case that the application generates a different error while a small amount of ArbGas remains, then an out-of-ArbGas error occurs at the very beginning of the error-handler. In this case, the second error would set the AVM Gas Remaining register to MaxInt256 and throw control back to the beginning of the error-handler, causing the error-handler to conclude that an out-of-ArbGas error was caused by the application. This is a reasonable behavior which we will consider to be correct.)
+该机制确保了ArbOS能够控制并计算应用代码需要消耗的ArbGas。 在调用该应用之前，ArbOS可以通过将寄存器设置至N来限制应用的调用至N个ArbGas，如果有out-of-ArbGas错误产生则接收该错误。 在运行错误处理程序开始时，ArbOS将读取AVM气体剩余寄存器，然后将该寄存器设置为MaxUint256，以确保错误处理程序不会耗尽ArbGas。 If the read of the register gave a value close to MaxInt256, then it must be the case that the application generated an out-of-ArbGas error. (It could be the case that the application generates a different error while a small amount of ArbGas remains, then an out-of-ArbGas error occurs at the very beginning of the error-handler. In this case, the second error would set the AVM Gas Remaining register to MaxInt256 and throw control back to the beginning of the error-handler, causing the error-handler to conclude that an out-of-ArbGas error was caused by the application. This is a reasonable behavior which we will consider to be correct.)
 
 If the application code returns control to the runtime without generating an out-of-ArbGas error, the runtime can read the AVM Gas Remaining register and subtract to determine how much ArbGas the application call used. This can be charged to the application's account.
 
