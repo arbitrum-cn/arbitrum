@@ -395,109 +395,109 @@ All jump instructions use jump destinations that are CodePoints, so a proof abou
 
 In normal execution (when proving is not required), implementations will typically just use PC values as on a conventional architecture. However, when a one-step proof is needed, the prover can use a pre-built lookup table to get the CodePoint hashes corresponding to any relevant PCs.
 
-#### Creating code at runtime
+#### 在运行时创建代码
 
-Code is added to an AVM in two ways. First, some code is created when the AVM starts running. This code is read in from an AVM executable file (a .mexe file) and preloaded by the AVM emulator.
+代码以两种方式添加到AVM中。 第一种，有些代码在AVM已启动就生成了。 这些代码读取自AVM可执行文件（.mexe文件），并由AVM虚拟机进行了预加载。
 
 Second, the AVM has three instructions to create new CodePoints: one that makes a new Error CodePoint, and two that make new CodePoints (one for a CodePoint with an immediate value and one for a CodePoint without) given an opcode, possibly an immediate value, and a next CodePoint. These are used by ArbOS when translating EVM code for execution. (For more details on this, see the [ArbOS](#arbos) section.)
 
-#### Getting messages from the Inbox
+#### 从收件箱中获取信息
 
-The _inbox_ instruction consumes the next message from the VM’s inbox and pushes it onto the AVM's Stack. If all messages in the inbox have been consumed already, the inbox instruction blocks--the VM cannot complete the inbox instruction, nor can it do anything else, until a message arrives and the inbox instruction can complete. If the inbox has been completely consumed, any purported one-step proof of executing the inbox instruction will be rejected.
+收件箱指令会消耗VM收件箱中下一条信息，并将其推送到AVM的堆栈中。 如果所有收件箱中的信息都被消耗了，收件箱指令就阻塞了——VM无法执行任何收件箱指令，其余事情也干不了，直至收件箱中有新的消息到达，收件箱指令可以完成执行。 如果收件箱是空的，任何对收件箱指令的单步证明都会被拒绝。
 
-#### Producing outputs
+#### 产生输出
 
-The AVM has two instructions that can produce outputs: _send_ and _log_. Both are hashed into the output hash accumulator that records the (hash of) the VM’s outputs, but _send_ causes its value to be recorded as calldata on the L1 chain, while _log_ does not. This means that outputs produced with send will be visible to L1 contracts, while those produced with *log* will not. Of course, sends are more expensive than logs. A useful design pattern is for a sequence of values to be produced as logs, and then a Merkle hash of those values to be produced as a single send. That allows an L1 contract to see the Merkle hash of the full sequence of outputs, so that it can verify the individual values when it sees them. ArbOS uses this design pattern, as described below.
+AVM有两条指令可以生成输出：send 和 log。 二者都会被哈希至输出哈希累计器中，该累积器记载了VM输出的哈希，使用send会导致其值作为calldata记录在L1上，但log并不会。 这意味着经由send产生的输出对L1合约是可见的，而log产生的则不会。 当然，send是比log更昂贵的。 一种实用的设计模式是，用log生成一串值，然后对其进行梅克尔哈希，再用单一的send。 这让  L1 合约能查看完整输出序列的 Merkle 哈希，因此可以校验其中的某个值。 ArbOS使用了这种设计模式，下方详述。
 
-#### ArbGas and gas tracking
+#### ArbGas和gas追踪
 
-The AVM has a notion of AVM gas, which is like gas on Ethereum. AVM gas measures the cost of executing an instruction, based on how long it will take a validator to execute it. Every AVM instruction has an AVM gas cost.
+AVM中有一个概念叫ArbGas，和以太坊中的gas是差不多的。 ArbGas基于验证者需要多久来执行一条指令，来计量该指令的使用成本。 每个AVM指令都会消耗ArbGas。
 
-Arbitrum instructions have different gas costs than their Ethereum counterparts, for two reasons. First, the relative costs of executing Instruction A versus Instruction B can be different on a Layer 2 system versus on Ethereum. For example, storage accesses can be cheaper on Arbitrum relative to add instructions. AVM gas costs are based on the relative cost on Arbitrum.
+Arbitrum指令与与其对应的以太坊指令有所不同，两个原因。 第一，在以太坊和L2上执行指令的相对成本是不同的。 例如，对add指令来说，在Arbitrum上使用存储空间就更便宜。 AVM gas成本是基于Arbitrum上的相对成本。
 
-The AVM architecture has a machine register called AVM Gas Remaining. Before executing any instruction, the AVM gas cost of that instruction is deducted from AVM Gas Remaining. If this would underflow the register (indicating that the execution is “out of AVM gas”) a hard error is generated and the AVM Gas Remaining register is set to MaxUint256.
+AVM架构中有一个叫ArbGas Remaining的寄存器。 在执行任何指令之前，ArbGas成本会从该寄存器中扣除。 如果造成了该寄存器下溢（也就是说该指令out of ArbGas）就会抛出硬错误，该寄存器的值也会重置为MaxUint256。
 
-The AVM has instructions to get and set the AVM Gas Remaining register, which ArbOS uses to limit and count the AVM gas used by user contracts.
+AVM用来获取和设定ArbGasRemaining寄存器的指令，ArbOS也用其来限制和计量用户合约所消耗的ArbGas。
 
-(For usability reasons, the Arbitrum API exposes "ArbGas" rather than "AVM gas", where 1 ArbGas is defined to be equal to 100 AVM gas.  This makes gas amounts and gas prices more intuitive and more consistent with legacy user interfaces from tools like wallets.)
+(出于可用性的考虑，Arbitrum的API公开了 "ArbGas "而不是 "AVM gas"，其中1 ArbGas被定义为等于100个AVM gas。  这使得gas数量和gas价格更加直观，与钱包等工具的传统用户界面更加一致)。
 
-For information on ArbGas prices and other fee-related matters, see the Fees section.
+关于ArbGas价格和其他相关内容请见费用章节。
 
-#### Error handling
+#### 错误处理
 
-Error conditions can arise in AVM execution in several ways, including stack underflows, AVM gas exhaustion, and type errors such as trying to jump to a value that is not a CodePoint.
+在AVM中可能出现几种形式的错误，包括栈下溢，ArbGas消耗殆尽，以及一些类型错误如尝试jump到某个不是码点的值。
 
-The AVM architecture has an Error CodePoint register that can be read and written by special instructions. When an error occurs, the Next CodePoint register is set equal to the Error CodePoint register, essentially jumping to the specified error handler.
+AVM架构中有一个Error CodePoint寄存器，可以通过特殊指令读写。 当错误发生时，Next CodePoint寄存器就会被设置为等于Error CodePoint寄存器，本质上是直接跳转到特定的错误处理器。
 
 ## ArbOS
 
-ArbOS is a trusted "operating system” at Layer 2 that isolates untrusted contracts from each other, tracks and limits their resource usage, and manages the economic model that collects fees from users to fund the operation of a chain. When an Arbitrum chain is started, ArbOS is pre-loaded into the chain’s AVM instance, and ready to run. After some initialization work, ArbOS sits in its main run loop, reading a message from the inbox, doing work based on that message including possibly producing outputs, then circling back to get the next message.
+ArbOS是L2上可信赖的『操作系统』，它负责将各个不受信任的合约分隔开，追踪并限制其资源使用，管理着从用户收集资金以给支付验证者的经济模型。 当Arbitrum链启动后，ArbOS已经预加载到AVM实例中，准备运行。 经过一些初始化工作后，ArbOS启动了其主循环，从收件箱中读取信息，根据信息进行一些工作其中可能会产生一些输出，然后再返回读取下一条信息。
 
-### Why ArbOS?
+### 为什么选择 ArbOS？
 
-In Arbitrum, much of the work that would otherwise have to be done expensively at Layer 1 is instead done by ArbOS, trustlessly performing these functions at the speed and low cost of Layer 2.
+在Arbitrum中，那些原本需要在昂贵的L1上进行的作业都在ArbOS中完成了，享受着L2的速度和低成本且无需信任。
 
 Supporting these functions in Layer 2 trusted software, rather than building them in to the L1-enforced rules of the architecture as Ethereum does, offers significant advantages in cost because these operations can benefit from the lower cost of computation and storage at Layer 2, instead of having to manage those resources as part of the Layer 1 EthBridge contract. Having a trusted operating system at Layer 2 also has significant advantages in flexibility, because Layer 2 code is easier to evolve, or to customize for a particular chain, than a Layer-1 enforced VM architecture would be.
 
-The use of a Layer 2 trusted operating system does require some support in the architecture, for example to allow the OS to limit and track resource usage by contracts. The AVM architecture provides that support.
+使用L2可信赖的操作系统确实需要有VM指令集的支持，例如，允许OS限制并追踪合约使用的资源。 AVM 架构提供了这种支持。
 
-For a detailed specification describing the format of messages used for communication between clients, the EthBridge, and ArbOS, see the [ArbOS Message Formats Specification](ArbOS_Formats.md).
+客户端、EthBridge和ArbOS之间通信所用的消息格式的详细规范，请参见ArbOS消息格式规范。
 
-## EVM Compatibility
+## EVM兼容性
 
-ArbOS provides functionality to emulate the execution of an Ethereum-compatible chain. It tracks accounts, executes contract code, and handles the details of creating and running EVM code. Clients can submit EVM transactions, including the ones that deploy contracts, and ArbOS ensures that the submitted transactions run in a compatible manner.
+ArbOS提供了对虚拟以太坊兼容链运算的模拟。 它能够记录账户，执行合约代码，处理EVM代码创建和运行的细节。 用户可以提交包含部署合约在内的EVM交易，ArbOS确保这些交易都是兼容的。
 
-### The account table
+### 账户列表
 
-ArbOS maintains an account table, which keeps track of the state of every account in the emulated Ethereum chain. The table entry for an account contains the account’s balance, its nonce, its code and storage (if it is a contract), and some other information associated with Arbitrum-specific features. An account’s entry in the table is initialized the first time anything happens in the account on the Arbitrum chain.
+ArbOS维护着一个账户列表，该列表记录了虚拟的以太坊链中每个账户的状态。 一个账户的表项中包含了其账户余额，nounce，代码以及存储空间（如果是和合约账户的话），以及一些与Arbitrum特定特性相关的其他信息。 一个账户的表项，在该账户第一次在Arbitrum链上有任何动作时就会初始化。
 
-### Translating EVM code to run on AVM
+### 翻译EVM代码并运行在AVM上
 
-EVM code can’t run directly on the AVM architecture, so ArbOS has to translate EVM code into equivalent AVM code in order to run it. This is done within ArbOS to ensure that it is trustless.
+EVM代码并不能直接运行在AVM架构上，因此ArbOS需要将EVM代码翻译成等价的AVM代码。 翻译发生在ArbOS内以确保是免信任的。
 
-(Some old versions of Arbitrum used a separate compiler to translate EVM to AVM code, but that had significant disadvantages in both security and functionality, so we switched to built-in translation in ArbOS.)
+（Arbitrum的部分老版本会使用单独的编译器来将EVM代码翻译为AVM代码，但这么做在安全性和功能性上都有明显短板，所以我们将其更改为了直接在ArbOS内翻译。）
 
-ArbOS takes an EVM contract’s program and translates it into an AVM code segment that has equivalent functionality. Some instructions can be translated directly; for example an EVM add instruction translates into a single AVM add instruction. Other instructions translate into a call to a library provided by ArbOS. For example, the EVM _CREATE2_ instruction, which creates a new contract whose address is computed in a special way, translates into a call to an ArbOS function called _evmOp_create2_.
+ArbOS将EVM合约翻译为有相同功能的AVM代码片段。 有些指令是可以直接翻译的；例如，EVM的ADD指令就可以直接翻译成单独的AVM ADD指令。 其余指令会翻译为对ArbOS提供的一个库的调用。 例如，EVM CREATE2指令，该指令会创建一个地址经过特殊计算的合约，它会被ArbOS翻译为ArbOS中evmOp_create2这个函数。
 
-To deploy a new contract, ArbOS takes the submitted EVM constructor code, translates it into AVM code for the constructor, and runs that code. If it completes successfully, ArbOS takes the return data, interprets it as EVM code, translates that into AVM code, and then installs that AVM code into the account table as the code for the now-deployed contract. Future calls to the contract will jump to the beginning of that AVM code.
+对于合约部署，ArbOS会将已提交的EVM构造函数翻译为AVM的构造函数并执行。 如果返回成功，ArbOS会将其返回数据以EVM代码标准翻译为AVM代码，并将AVM代码安装至该新部署合约的地址中。 未来对该合约进行调用，会直接跳至该合约AVM代码的起点。
 
-### More EVM emulation details
+### 更多EVM虚拟化细节
 
-When an EVM transaction is running, ArbOS keeps an EVM Call Stack, a stack of EVM Call Frames which represent the nested calls inside of the transaction. Each EVM Call Frame records the data for one level of call. When an inner call returns or reverts, ArbOS cleans up its call frame, and either propagates the effects of the call (if the call returned) or discards them (if the call reverted).
+当 EVM 事务​​运行时，ArbOS 会保留一个 EVM 调用堆栈，这是一个 EVM 调用帧堆栈，代表事务内部的嵌套调用。 每个EVM调用帧都记录了一级调用的数据。 当一个内部调用返回或回滚了，ArbOS将清空其调用帧，并执行该call带来的结果（如果返回了）或丢弃（如果回滚了）。
 
-The EVM call family of instructions (call, delegatecall, etc.) invoke ArbOS library functions that create new EVM Call Frames according to the EVM-specified behavior of the call type that was made, including propagation of calldata and gas. Any gas left over after a call is returned to the caller, as on Ethereum.
+EVM call系列指令（call，delegatecall等）会根据EVM标准的call类型，通过ArbOS库中的函数来创建EVM调用帧，其中包括对calldata和gas的传播。 跟以太坊一样，调用后任何剩余的gas都会返回给调用者。
 
-Certain errors in executing EVM, such as stack underflows, will trigger a corresponding error during AVM emulation. ArbOS’s error handler detects that the error occurred while emulating a certain EVM call, and reverts that call accordingly, returning control to its caller or providing a transaction receipt as appropriate. ArbOS distinguishes out-of-gas errors from other errors by looking at the AVM Gas Remaining register, which is automatically set to MaxUint256 if an out-of-gas error occurred.
+EVM执行中特定的错误，如栈下溢，都会在AVM模拟过程中触发相应的错误。 ArbOS的错误处理器发现在模拟特定EVM调用时出现了错误，会根据错误将调用回滚，将控制权返回给其调用者并生成合适的交易信息。 ArbOS通过检查ArbGasRemaining寄存器来区别out-of-gas错误与其他错误，在 gas 不足时该寄存器的值会设为MaxUint256。
 
-The result of these mechanisms is that EVM code can run compatibly on Arbitrum.
+这些机制保证了Arbitrum可以兼容运行EVM代码。
 
-There are three main differences between EVM execution on Arbitrum compared to Ethereum.
+在Arbitrum中EVM执行与在以太坊上有三个主要不同点。
 
-First, the two EVM instructions DIFFICULTY and COINBASE, which don’t make sense on an L2 chain, return fixed constant values.
+第一点，DIFFICULTY 和 COINBASE这两个EVM指令在L2上是无意义的，所以返回固定常量。
 
-Second, the EVM instruction BLOCKHASH returns a pseudorandom value that is a digest of the chain’s history, but not the same hash value that Ethereum would return at the same block number.
+第二点，BLOCKHASH指令会返回一个基于链历史摘要的伪随机值，但和以太坊在相同区块高度下的返回值并不相同。
 
-Third, Arbitrum uses the ArbGas system so everything related to gas is denominated in ArbGas, including the gas costs of operations, and the results of gas-related instructions like GASLIMIT and GASPRICE.
+第三点，Arbitrum使用了ArbGas系统，所以一切和 gas 相关的都以ArbGas计价，包括运算的gas成本，以及与燃气相关的指令的结果，诸如GASLIMIT和GASPRICE。
 
-### Deploying EVM contracts
+### 部署EVM合约
 
-On Ethereum, an EVM contract is deployed by sending a transaction to the null account, with calldata consisting of the contract’s constructor. Ethereum runs the constructor, and if the constructor succeeds, its return data is set up as the code for the new contract.
+在以太坊上，部署EVM合约时会向null账户发送一笔附带着由合约构造函数组成的calldata的交易。 以太坊执行构造函数，如果构造函数成功，其返回数据将设置为新合约的代码。
 
-Arbitrum uses a similar pattern. To deploy a new EVM contract, ArbOS takes the submitted EVM constructor code, translates it into AVM code for the constructor, and runs that AVM code. If it completes successfully, ArbOS takes the return data, interprets it as EVM code, translates that into AVM code, and then installs that AVM code into the account table as the code for the now-deployed contract. Future calls to the contract will jump to the beginning of that AVM code.
+Arbitrum使用相似的模式。 对于合约部署，ArbOS 获取提交的 EVM 构造函数代码，将其转换为构造函数的 AVM 代码，然后运行该 AVM 代码。 如果返回成功，ArbOS会将其返回数据以EVM代码标准翻译为AVM代码，并将AVM代码安装至该新部署合约的地址中。 未来对该合约进行调用，会直接跳至该合约AVM代码的起点。
 
-### Transaction receipts
+### 交易结果
 
-When an EVM transaction finishes running, whether or not it succeeded, ArbOS issues a transaction receipt, using the AVM _log_ instruction. The receipt is detected by Arbitrum nodes, which can use it to provide results to users according to the standard Ethereum RPC API.
+当EVM交易结束时，不论是否成功，ArbOS都会使用AVM log指令发布一个交易结果。 该结果可由Arbitrum节点检测到，从而向使用标准以太坊RPC API的用户返回结果。
 
-## Full Nodes
+## 全节点
 
-As the name suggests, full nodes in Arbitrum play the same role that full nodes play in Ethereum: they know the state of the chain and they provide an API that others can use to interact with the chain.
+顾名思义，Arbitrum中的全节点所扮演的角色与以太坊中的全节点相同：他们知道链的状态，并提供一个API，其他人可以用它来与链互动。
 
-Arbitrum full nodes operate ["above the line"](#above-or-below-the-line), meaning that they don’t worry about the rollup protocol but simply treat their Arbitrum chain as a machine consuming inputs to produce outputs. A full node has a built-in AVM emulator that allows it to do this.
+Arbitrum全节点是在『线上方』工作的，也就是说他们并不关心rollup协议，只将Arbitrum链视为消耗输入并产生输出的计算机。 Arbitrum全节点内置了AVM模拟器来实现该功能。
 
 ### 批量处理交易：全节点作为聚合器
 
-One important role of a full node is serving as an aggregator, which means that the full node receives a set of signed transactions from users and assembles them into a batch which it submits to the chain’s inbox as a single unit. Submitting transactions in batches is more efficient than one-by-one submission, because each submission is an L1 transaction to the EthBridge, and Ethereum imposes a base cost of 21,000 L1 gas per transaction. Submitting a batch allows that fixed cost (and some other fixed costs) to be amortized across a larger group of user transactions. That said, submitting a batch is permissionless, so any user can, say, submit a single transaction "batch" if the need arises; Arbitrum thereby inherits the same censorship resistance as the Ethereum.
+全节点的一个重要角色是充当聚合器，聚合器将多笔用户签名的交易集成为一个批次，然后作为一个整体发送至收件箱。 批量提交交易比单独提交更有效率，因为每笔交易在L1上都会提交到EthBridge，以太坊对每笔交易都收取21000 gas。 将大批用户的交易批量提交则摊薄了该固定成本（以及其他的一些成本）。 提交批量交易也是免许可的，任何用户都可以提交，甚至可以在有需求时提交一个只包含一个交易的『批次』。由此，Arbitrum具有和以太坊一样的抗审查能力。
 
 ### 压缩交易
 
