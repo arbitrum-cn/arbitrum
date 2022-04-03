@@ -311,17 +311,17 @@ Alice的第一个动作需要她把她的断言从开始（0条指令已执行�
 
 **以ArbGas而非步数进行分割：**我们用ArbGas消耗量作为分割依据，而非指令的数量。 这使得分割协议能精确地确定验证者需要花多久来检验断言的正确性（因为验证者的检验时间与ArbGas消耗成正比），由此即能让协议为rollup结点设定更加准确的截止时间。 不过，缺点是，不同的指令需要不同量的ArbGas，我们就不能再假设某一段可以在N/K步的边界就能恰好执行完。 真实的协议允许断言在第一个指令边界或在其目标终点后结束；而对正确性争辩也会考虑有人会在界定分段的正确终点上说谎。
 
-**空收件箱场景：**真实的AVM不可能总能一直执行N个ArbGas而从不会卡住。 The machine might halt, or it might have to wait because its inbox is exhausted so it can’t go on until more messages arrive. So Bob must be allowed to respond to Alice’s claim of N units of execution by claiming that N steps are not possible. The real protocol thus allows any response (but not the initial claim) to claim a special end state that means essentially that the specified amount of execution is not possible under the current conditions.
+**空收件箱场景：**真实的AVM不可能总能一直执行N个ArbGas而从不会卡住。 AVM可能会宕机，也可能是因为收件箱已经空了也没有新信息进入。 所以必须允许Bob，对Alice的N单位的运算断言，回应以：该N步是不可能的。 因此真实协议会允许进行这种“在当前条件下不可能执行所述数量的操作”的回应（对初始断言除外）。
 
-**Time Limits:** Each player is given a time allowance. The total time a player uses for all of their moves must be less than the time allowance, or they lose the game. Think of the time allowance as being about a week.
+**时间限制**： 博弈中一方所有行动的加总不能超过其时间限制，否则会输掉博弈。 时间限制大约为一周。
 
-It should be clear that these changes don’t affect the basic correctness of the challenge protocol. They do, however, improve its efficiency and enable it to handle all of the cases that can come up in practice.
+需要澄清的是，上述变化并不会对挑战协议的正确性判定有任何影响。 但它们确实在效率和边界情况处理上对协议提升很大。
 
-### Efficiency
+### 效率
 
-The challenge protocol is designed so that the dispute can be resolved with a minimum of work required by the EthBridge in its role as referee. When it is Alice’s move, the EthBridge only needs to keep track of the time Alice uses, and ensure that her move does include K-1 intermediate points as required. The EthBridge doesn’t need to pay attention to whether those claims are correct in any way; it only needs to know whether Alice’s move “has the right shape”.
+挑战协议设计的目的是让仲裁EthBridge只承担最小工作量。 当Alice 行动时，EthBridge 只需要跟踪 Alice 的用时以及她的行动是否包含所需的 K-1 个中间点。 EthBridge在任何层面上都不关心这些断言是否正确；它只需要知道Alice的行动是符合要求的。
 
-The only point where the EthBridge needs to evaluate a move “on the merits” is at the one-step proof, where it needs to look at Alice’s proof and determine whether the proof that was provided does indeed establish that the virtual machine moves from the before state to the claimed after state after one step of computation. We’ll discuss the details of one-step proofs below in the [Arbitrum Virtual Machine](#avm) section.
+EthBridge仅在单步证明时需要依情断案，它需要核查Alice提供的证明是否真的能够反映VM在执行该步运算之前的状态到之后的状态。 We’ll discuss the details of one-step proofs below in the [Arbitrum Virtual Machine](#avm) section.
 
 ## 验证者
 
