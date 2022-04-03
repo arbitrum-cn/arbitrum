@@ -321,7 +321,7 @@ Alice的第一个动作需要她把她的断言从开始（0条指令已执行�
 
 挑战协议设计的目的是让仲裁EthBridge只承担最小工作量。 当Alice 行动时，EthBridge 只需要跟踪 Alice 的用时以及她的行动是否包含所需的 K-1 个中间点。 EthBridge在任何层面上都不关心这些断言是否正确；它只需要知道Alice的行动是符合要求的。
 
-EthBridge仅在单步证明时需要依情断案，它需要核查Alice提供的证明是否真的能够反映VM在执行该步运算之前的状态到之后的状态。 We’ll discuss the details of one-step proofs below in the [Arbitrum Virtual Machine](#avm) section.
+EthBridge仅在单步证明时需要依情断案，它需要核查Alice提供的证明是否真的能够反映VM在执行该步运算之前的状态到之后的状态。 我们会在下方的[AVM](#avm)章节中对单步证明进行详述。
 
 ## 验证者
 
