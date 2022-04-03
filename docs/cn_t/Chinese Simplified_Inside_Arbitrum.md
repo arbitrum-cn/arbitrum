@@ -337,43 +337,43 @@ EthBridge仅在单步证明时需要依情断案，它需要核查Alice提供的
 - 防御验证者策略监视 Rollup 协议的运行。 如果提出的 Rollup 区块皆为正确的区块，则此策略的验证者将不会直接参与进网络。 但是，如果有恶意验证者提议了不正确的区块，该策略会通过自行提议正确的区块或在另一方已提议的正确区块上进行质押来干预。 这种策略在网络进展顺利时可以避免自己质押，但如果有人试图作弊，它将会进行质押以捍卫结果的正确。
 - The _watchtower validator_ strategy never stakes. 它只是监视 Rollup 协议网络，如果有恶意验证者提议了不正确的区块，它就会发出警报（通过它选择的任何方式），以便其他验证者可以进行干预。 该策略假设愿意进行质押的其他各方会进行干预，以获取不诚实提议者的一些质押，并且这可能会在不诚实区块的截止日期到期之前发生。 （在实际环境中，这将允许几天的相应。）
 
-Under normal conditions, validators using the defensive and watchtower strategies won’t do anything except observe. A malicious actor who is considering whether to try cheating won’t be able to tell how many defensive and watchtower validators are operating incognito. Perhaps some defensive validators will announce themselves, but others probably won’t, so a would-be attacker will always have to worry that defenders are waiting to emerge.
+正常情况下，防御型验证者和守望者只需要观察而不需要做其他任何事。 准备捣乱的作恶者并不知道有多少双眼睛在暗中观察。 也许有一些防御型验证者会一开始就亮明身份，但其他人可能并不会这么做，所以，潜在的防御者一直都是作恶者的心头大患。
 
-Who will be validators? Anyone can do it, but most people will choose not to. In practice we expect people to validate a chain for several reasons.
+那么谁可以成为验证者呢？ 任何人都行，但大部分用户并不需要关心这些。 实践中，我们预期大家会基于下列理由成为验证者：
 
-- Some validators will be paid, by the party that created the chain or someone else. On the Arbitrum One chain, Offchain Labs will hire some validators.
-- Parties who have significant assets at stake on a chain, such as dapp developers, exchanges, power-users, and liquidity providers, may choose to validate in order to protect their investment.
-- Anyone who chooses to validate can do so. Some users will probably choose to validate in order to protect their own interests or just to be good citizens. But ordinary users don’t need to validate, and we expect that the vast majority of users won’t.
+- 被链的创始方或其他人雇佣的验证者。 在Arbitrum One 链上，Offchain Labs会雇佣一些验证者。
+- 在链上有大规模资金的用户，如dapp开发者，交易所，高级用户，流动性提供者，它们都可能会选择成为验证者来保障自己的资产安全。
+- 基于任何其他理由的人。 想要保护自己资产的人，或想要成为一个优秀公民的人。 大部分普通用户不需要这么做，我们也认为这不会是大部分用户的选择。
 
-## AVM: The Arbitrum Virtual Machine
+## AVM：Arbitrum虚拟机
 
-The Arbitrum Virtual Machine (AVM) is the interface between the Layer 1 and Layer 2 parts of Arbitrum. Layer 1 _provides_ the AVM interface and ensures correct execution of the virtual machine. Layer 2 _runs on_ the AVM virtual machine and provides the functionality to deploy and run contracts, track balances, and all of the things a smart-contract-enabled blockchain needs to do.
+Arbitrum虚拟机，AVM，是L1和L2的接口。 L1提供了AVM接口并确保VM的正确运行。 L2运行AVM并提供了一些功能，如部署合约，运行合约，追踪余额，以及所有有智能合约的区块链所需的能力。
 
-**Every Arbitrum chain has a single AVM** which does all of the computation and maintains all of the storage for everything that happens on the chain. Unlike some other systems which have a separate “VM” for each contract, Arbitrum uses a single virtual machine for the whole chain, much like Ethereum. The management of multiple contracts on an Arbitrum chain is done by software that runs on top of the AVM.
+每个Arbitrum链都只有一个AVM，执行所有运算，维护所有存储空间。 有些其他系统对每个合约都单独运行一个虚拟机，而Arbitrum更像以太坊，一个虚拟机管理整条链。 对多个合约的管理是由运行在AVM上的软件实现的。
 
-At its core, a chain’s VM executes in this simple model, consuming messages from its inbox, changing its state, and producing outputs.
+从核心来看，一条链的VM的工作模型非常简单，读取收件箱中的信息，改变链的状态，并产生输出。
 
 ![img](https://lh4.googleusercontent.com/qwf_aYyB1AfX9s-_PQysOmPNtWB164_qA6isj3NhkDnmcro6J75f6MC2_AjlN60lpSkSw6DtZwNfrt13F3E_G8jdvjeWHX8EophDA2oUM0mEpPVeTlMbsjUCMmztEM0WvDpyWZ6R)
 
-The starting point for the AVM design is the Ethereum Virtual Machine (EVM). Because Arbitrum aims to efficiently execute programs written or compiled for EVM, the AVM uses many aspects of EVM unchanged. For example, AVM adopts EVM's basic integer datatype (a 256-bit big-endian unsigned integer), as well as the instructions that operate on EVM integers.
+AVM设计的出发点是以太坊虚拟机EVM。 因为 Arbitrum 旨在高效地执行为 EVM 编写或编译的程序，所以AVM在许多地方都保留了EVM的设计。 例如，AVM采用了EVM的基础整型数据结构（256位大端序无符号整数，uint256），以及EVM中对整型操作的指令。
 
-### Why AVM differs from EVM
+### 为什么AVM与EVM不同
 
-Differences between AVM and EVM are motivated by the needs of Arbitrum's Layer 2 protocol and Arbitrum's use of a interactive proving to resolve disputes.
+由于L2协议的需要以及Arbitrum使用了交互式证明来解决争议，AVM需要与EVM有一些不同。
 
-#### Execution vs. proving
+#### 执行vs证明
 
-Arbitrum, unlike EVM and similar architectures, supports both execution (advancing the state of a computation by executing it, which is always done off-chain in Arbitrum) and proving (convincing an L1 contract or other trusted party that a claim about execution is correct). EVM-based systems resolve disputes by re-executing the disputed code, whereas Arbitrum relies on a more efficient challenge protocol that leads to an eventual proof.
+不像EVM和其他类似架构，Arbitrum既支持执行（通过执行运算推进链状态向前，在Arbitrum中是在链下进行的）又支持证明（让L1合约或其他可信赖方相信某个断言是正确的）。 EVM架构的系统通过再执行来解决争议，Arbitrum依赖于更加高效的挑战协议来验证最终证明。
 
-One nice consequence of separating execution from proving -- and never needing to re-execute blocks of code on an L1 chain -- is that we can optimize execution and proving for the different environments they’ll be used in. 在一个局部可信的环境中，执行速度是最优化的，因为地方执行是常见情况。 另一方面，正在进行， 即使在繁忙的Ethereum L1链中，也需要更少的时间，但仍然必须足够有效，以使其具有可行性。 很少需要校验，但必须始终有可能进行校验。 The logical separation of execution from proving allows execution speed to be optimized more aggressively in the common case where proving turns out not to be needed.
+将执行和证明分离显然是非常好的——完全不需要在L1上重新执行代码，所以二者在不同环境下就有了适合自己不同的优化。 在一个局部可信的环境中，执行速度是最优化的，因为地方执行是常见情况。 另一方面，正在进行， 即使在繁忙的Ethereum L1链中，也需要更少的时间，但仍然必须足够有效，以使其具有可行性。 很少需要校验，但必须始终有可能进行校验。 这种执行和证明分离设计在正常情况下，极大地提高了执行的效率。
 
 #### ArbOS的需求
 
 另一个在需求上的不同点是，Arbitrum使用了ArbOS，该『操作系统』运行在L2上。 ArbOS控制着合约的执行，将各个合约彼此分隔，并追踪它们的资源使用情况。 为了支持这一点，AVM中包含了一些指令，可以保存和恢复VM的栈，管理追踪资源使用的VM寄存器，以及接收外部调用者的信息。 这些指令是ArbOS自身使用的，不过ArbOS能够确保它们不会出现在不受信任的代码中。
 
-Supporting these functions in Layer 2 trusted software, rather than building them in to the L1-enforced rules of the architecture as Ethereum does, offers significant advantages in cost because these operations can benefit from the lower cost of computation and storage at Layer 2, instead of having to manage those resources as part of the Layer 1 EthBridge contract. Having a trusted operating system at Layer 2 also has significant advantages in flexibility, because Layer 2 code is easier to evolve, or to customize for a particular chain, than a Layer-1 enforced VM architecture would be.
+在L2可信的软件中支持这些功能，而非将其构建在L1强加的以太坊式的架构上，对节省成本有重大意义，因为我们不在L1 EthBridge合约中管理这些资源，而是将其放入了计算和存储更便宜的L2上。 在L2构建一套可信赖的操作系统同样对灵活性有重大意义，因为L2与L1强制的VM架构相比，其代码更容易迭代也更容易定制。
 
-The use of a Layer 2 trusted operating system does require some support in the virtual machine instruction set, for example to allow the OS to limit and track resource usage by contracts.
+使用L2可信赖的操作系统确实需要有VM指令集的支持，例如，允许OS限制并追踪合约使用的资源。
 
 #### 支持梅克尔化
 
@@ -437,7 +437,7 @@ ArbOS是L2上可信赖的『操作系统』，它负责将各个不受信任的�
 
 在Arbitrum中，那些原本需要在昂贵的L1上进行的作业都在ArbOS中完成了，享受着L2的速度和低成本且无需信任。
 
-Supporting these functions in Layer 2 trusted software, rather than building them in to the L1-enforced rules of the architecture as Ethereum does, offers significant advantages in cost because these operations can benefit from the lower cost of computation and storage at Layer 2, instead of having to manage those resources as part of the Layer 1 EthBridge contract. Having a trusted operating system at Layer 2 also has significant advantages in flexibility, because Layer 2 code is easier to evolve, or to customize for a particular chain, than a Layer-1 enforced VM architecture would be.
+在L2可信的软件中支持这些功能，而非将其构建在L1强加的以太坊式的架构上，对节省成本有重大意义，因为我们不在L1 EthBridge合约中管理这些资源，而是将其放入了计算和存储更便宜的L2上。 在L2构建一套可信赖的操作系统同样对灵活性有重大意义，因为L2与L1强制的VM架构相比，其代码更容易迭代也更容易定制。
 
 使用L2可信赖的操作系统确实需要有VM指令集的支持，例如，允许OS限制并追踪合约使用的资源。 AVM 架构提供了这种支持。
 
