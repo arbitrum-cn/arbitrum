@@ -367,39 +367,39 @@ Arbitrum, unlike EVM and similar architectures, supports both execution (advanci
 
 One nice consequence of separating execution from proving -- and never needing to re-execute blocks of code on an L1 chain -- is that we can optimize execution and proving for the different environments they’ll be used in. 在一个局部可信的环境中，执行速度是最优化的，因为地方执行是常见情况。 另一方面，正在进行， 即使在繁忙的Ethereum L1链中，也需要更少的时间，但仍然必须足够有效，以使其具有可行性。 很少需要校验，但必须始终有可能进行校验。 The logical separation of execution from proving allows execution speed to be optimized more aggressively in the common case where proving turns out not to be needed.
 
-#### Requirements from ArbOS
+#### ArbOS的需求
 
-Another difference in requirements is that Arbitrum uses ArbOS, an "operating system" that runs at Layer 2. ArbOS controls the execution of separate contracts to isolate them from each other and track their resource usage. In support of this, the AVM includes instructions to support saving and restoring the machine's stack, managing machine registers that track resource usage, and receiving messages from external callers. These instructions are used by ArbOS itself, but ArbOS ensures that they will never appear in untrusted code.
+另一个在需求上的不同点是，Arbitrum使用了ArbOS，该『操作系统』运行在L2上。 ArbOS控制着合约的执行，将各个合约彼此分隔，并追踪它们的资源使用情况。 为了支持这一点，AVM中包含了一些指令，可以保存和恢复VM的栈，管理追踪资源使用的VM寄存器，以及接收外部调用者的信息。 这些指令是ArbOS自身使用的，不过ArbOS能够确保它们不会出现在不受信任的代码中。
 
 Supporting these functions in Layer 2 trusted software, rather than building them in to the L1-enforced rules of the architecture as Ethereum does, offers significant advantages in cost because these operations can benefit from the lower cost of computation and storage at Layer 2, instead of having to manage those resources as part of the Layer 1 EthBridge contract. Having a trusted operating system at Layer 2 also has significant advantages in flexibility, because Layer 2 code is easier to evolve, or to customize for a particular chain, than a Layer-1 enforced VM architecture would be.
 
 The use of a Layer 2 trusted operating system does require some support in the virtual machine instruction set, for example to allow the OS to limit and track resource usage by contracts.
 
-#### Supporting Merkleization
+#### 支持梅克尔化
 
-Any Layer 2 protocol that relies on assertions and dispute resolution must define a rule for Merkle-hashing the full state of the virtual machine so that claims about parts of the state can be efficiently made to the base layer. That rule must be part of the architecture specification because it is relied upon in resolving disputes. It must also be reasonably efficient for validators to maintain the Merkle hash and/or recompute it when needed. This affects how the architecture structures its memory, for example. Any storage structure that is large and mutable will be relatively expensive to Merkleize, and a specific algorithm for Merkleizing it would need to be part of the architecture specification.
+任何L2依赖断言和争议解决系统的协议，都必须定义一套能够将系统完整状态进行梅克尔哈希的规则，使得状态断言能够高效地发布在L1上。 由于在争议解决中需要用到，所以该规则必须是架构标准的一部分。 同样，在验证者维护梅克尔哈希以及有需要时对其重计算时，也必须保持合理的效率。 这些事情关系到架构如何构建其内存。 比如，对任何大的且可变的数据结构进行梅克尔化都比较耗费资源，并且，对其进行梅克尔化的特定算法可能需成为架构标准中的一部分。
 
-The AVM architecture responds to this challenge by having only bounded-size, immutable memory objects ("Tuples"), which can include other Tuples by reference. Tuples cannot be modified in-place but there is an instruction to copy a Tuple with a modification. This allows the construction of tree structures which can behave like a large flat memory. Applications can use functionalities such as large flat arrays, key-value stores, and so on, by accessing libraries that use Tuples internally.
+AVM对此的解决方案是，构建一种大小有限、不可更改的内存对象（元组，Tuples），通过引用来囊括其他元组。 元组虽然不可原地改变，但有一个指令可以复制一个元组并对其进行修改。 如此便能够构建大平面的树状内存结构。 应用程序通过内部使用元组的库就能够使用一些诸如大平面数组，key-value存储，等等特性。
 
-The semantics of Tuples make it impossible to create cyclic structures of Tuples, so an AVM implementation can safely manage Tuples by using reference-counted, immutable structures. The hash of each Tuple value need only be computed once, because the contents are immutable.
+元组的特性令创造首尾循环的元组是不可能的，AVM可以通过引用计数、不可变结构安全地管理元组。 每个元组的哈希只需计算一次，因为元组是不可变的。
 
-#### Codepoints: Optimizing code for proving
+#### CodePoint代码点：为证明优化代码
 
-The conventional organization of code is to store a linear array of instructions, and keep a program counter pointing to the next instruction that will be executed. With this conventional approach, proving the result of one instruction of execution requires logarithmic time and space, because a Merkle proof must be presented to prove which instruction is at the current program counter.
+传统的代码组织结构会维护一个线性的指令队列，并将进程计数器（PC）指向下一条要执行的指令。 使用这种传统方法，证明一条执行指令的结果需要对数时间和空间，因为必须提供 Merkle 证明来证明哪条指令位于当前程序计数器。
 
-The AVM does this more efficiently, by separating execution from proving. Execution uses the standard abstraction of an array of instructions indexed by a program counter, but proving uses an equivalent CodePoint construct that allows proving and proof-checking to be done in constant time and space. The CodePoint for the instruction at some PC value is the pair (opcode at PC, Hash(CodePoint at PC+1)). (If there is no CodePoint at PC+1, then zero is used instead.)
+通过分离执行和证明，AVM在实现这一点上更加高效。 执行使用了标准抽象的由进程计数器索引的指令队列，而证明则采用了CodePoint码点结构确保证明和证据核查在常量时间和常量空间内即可完成。 在某个PC值下指令的码点是（opcode at PC, Hash(CodePoint at PC+1)）。 如果没有CodePoint at PC+1，则使用0。
 
-For proving purposes, the "program counter" is replaced by a "current CodePoint hash" value, which is part of the machine state. The preimage of this hash will contain the current opcode, and the hash of the following codepoint, which is everything a proof verifier needs to verify what the opcode is and what the current CodePoint hash value will be after the instruction, if the instruction isn't a Jump.
+为了进行证明，『进程计数器』被『当前码点哈希』值所代替，该值是VM状态的一部分。 该哈希的原像包含了当前的操作码及下一个码点的哈希，如果该指令不是JUMP的话，这些信息对要检查操作码及执行后当前码点哈希值的证明核验者来说就是全集。
 
-All jump instructions use jump destinations that are CodePoints, so a proof about execution of a jump instruction also has immediately at hand not only the PC that is being jumped to, but also what the contents of the "current CodePoint hash" register will be after the jump executes. In every case, proof and verification requires constant time and space.
+所有的JUMP指令的目的地都是码点，因此，一个JUMP指令执行的证明也是信手拈来的，不仅有JUMP后的进程计数器，还有『当前码点哈希』这个寄存器在JUMP执行后的值。 在任何情况下，证明和验证都只需要常量时空。
 
-In normal execution (when proving is not required), implementations will typically just use PC values as on a conventional architecture. However, when a one-step proof is needed, the prover can use a pre-built lookup table to get the CodePoint hashes corresponding to any relevant PCs.
+在一般的执行中（此时不需要证明），会按照传统架构使用进程计数器。 不过当需要单步证明时，提供者可以使用预设的查询表获取任何PC所对应的码点。
 
 #### 在运行时创建代码
 
 代码以两种方式添加到AVM中。 第一种，有些代码在AVM已启动就生成了。 这些代码读取自AVM可执行文件（.mexe文件），并由AVM虚拟机进行了预加载。
 
-Second, the AVM has three instructions to create new CodePoints: one that makes a new Error CodePoint, and two that make new CodePoints (one for a CodePoint with an immediate value and one for a CodePoint without) given an opcode, possibly an immediate value, and a next CodePoint. These are used by ArbOS when translating EVM code for execution. (For more details on this, see the [ArbOS](#arbos) section.)
+第二种，AVM有三个指令创建新的码点：一个会创建new Error CodePoint，另外两个会根据操作码创建new CodePoints(其中一个有立即值另外一个没有)，这两个有可能是一个是立即值，一个是下一个代码点。 当翻译EVM代码时ArbOS使用了这些指令。 (更多细节请参见ArbOS部分）。
 
 #### 从收件箱中获取信息
 
