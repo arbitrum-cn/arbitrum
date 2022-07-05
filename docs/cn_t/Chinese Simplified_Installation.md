@@ -4,7 +4,7 @@ title: Installation
 sidebar_label: Installation
 ---
 
-## Setup instructions
+## 设置说明
 
 Follow the instructions for supported operating systems or use the comprehensive list of dependencies.
 
