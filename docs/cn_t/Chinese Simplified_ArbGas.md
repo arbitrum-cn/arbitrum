@@ -4,17 +4,17 @@ title: ArbGas and running time in Arbitrum
 sidebar_label: ArbGas and Runtime
 ---
 
-ArbGas is used by Arbitrum to track the cost of execution on an Arbitrum chain. It is similar in concept to Ethereum gas, in the sense that every Arbitrum Virtual Machine instruction has an ArbGas cost, and the cost of a computation is the sum of the ArbGas costs of the instructions in it.
+ArbGas是Arbitrum用来管理链上执行成本的。 与以太坊gas的理念一致，每个AVM指令都会有一定数量的ArbGas消耗，而一次运算的总成本是该运算包含的指令的ArbGas的加总。
 
-ArbGas is not directly comparable to Ethereum gas. Arbitrum does not have a hard ArbGas limit, and in general an Arbitrum chain can consume many more ArbGas units per second of computation, compared to the number of Ethereum gas units in Ethereum's gas limit. Developers and users should think of ArbGas as much more plentiful and much cheaper per unit than Ethereum gas.
+ArbGas并不能直接与以太坊gas相比。 Arbitrum does not have a hard ArbGas limit, and in general an Arbitrum chain can consume many more ArbGas units per second of computation, compared to the number of Ethereum gas units in Ethereum's gas limit. 开发者和用户应该把ArbGas理解为是比以太坊gas更加丰饶且便宜的。
 
 In the eventual production deployment of Arbitrum, a chain will be allowed to charge users a fee for ArbGas, to compensate the chain's validators for their expenses. However, the fee is set to zero by default in Arbitrum beta, for the convenience of developers and users.
 
-## Why ArbGas?
+## 为什么选择 ArbGas？
 
 One of the design principles of the Arbitrum Virtual Machine (AVM) is that every instruction should take a predictable time to emulate, prove, and proof-check. As a corollary, we want a way to count or estimate the time required to emulate any computation.
 
-There are two reasons for this. First, we want to ensure that proof-checking has a predictable cost, so we can predict how much L1 gas is needed by the EthBridge and ensure that the EthBridge will never come anywhere close to the L1 gas limit.
+有两个原因。 第一，我们需要确保证据检验有可预测的成本，这样就能预测EthBridge需要多少L1 gas，以确保EthBridge不会接近L1的gas limit。
 
 Second, emulation time estimation is important for throughput of a rollup chain, because it allows us to set the chain's speed limit safely.
 
@@ -28,30 +28,30 @@ An assertion can safely be challenged even if the ArbGas usage is the only aspec
 
 Eventually bisection will get down to a single AVM instruction, with a claim about that instruction's ArbGas usage. One-step proof verification checks that this claim is correct. So a false ArbGas claim can be pursued all the way down to a single instruction with a false ArbGas claim that will be detected by the one-step proof verification in the EthBridge.
 
-## ArbGas accounting in the AVM
+## AVM中的ArbGas计量
 
 The AVM architecture also does ArbGas accounting internally. There is a machine register called `ArbGasRemaining`, which is a 256-bit unsigned integer that behaves as follows.
 
 - The register is initially set to MaxInt256.
-- When any instruction executes, that instruction's ArbGas cost is subtracted from the register. If this would make the register's value less than zero, an error is generated and the register's value is set to MaxInt256. (The error causes a control transfer as specified in the AVM specification.)
-- A special instruction can be used to read the register's value.
-- Another special instruction can be used to set the register to any desired value.
+- When any instruction executes, that instruction's ArbGas cost is subtracted from the register. If this would make the register's value less than zero, an error is generated and the register's value is set to MaxInt256. （在AVM规范中说明了该错误会导致的控制权转移。）
+- 有一条特殊指令可以读取该寄存器的值。
+- 还有一条特殊指令可以将该寄存器的值设置为任意值。
 
-This mechanism allows the trusted AVM runtime to control and account for the ArbGas usage of applicaton code. The runtime can limit an application call's use of ArbGas to N units by setting the register to N before calling the application, then catching the out-of-ArbGas error if it is generated. At the beginning of the runtime's error-handler, the runtime would read the ArbGasRemaining register, then set the register to MaxInt256 to ensure that the error-handler could not run out of ArbGas. If the read of the register gave a value close to MaxInt256, then it must be the case that the application generated an out-of-ArbGas error. (It could be the case that the application generates a different error while a small amount of ArbGas remains, then an out-of-ArbGas error occurs at the very beginning of the error-handler. In this case, the second error would set the ArbGasRemaining to MaxInt256 and throw control back to the beginning of the error-handler, causing the error-handler to conclude that an out-of-ArbGas error was caused by the application. This is a reasonable behavior which we will consider to be correct.)
+This mechanism allows the trusted AVM runtime to control and account for the ArbGas usage of applicaton code. The runtime can limit an application call's use of ArbGas to N units by setting the register to N before calling the application, then catching the out-of-ArbGas error if it is generated. At the beginning of the runtime's error-handler, the runtime would read the ArbGasRemaining register, then set the register to MaxInt256 to ensure that the error-handler could not run out of ArbGas. 如果读取寄存器的值接近于MaxInt256，那么一定是应用程序产生了Out-of-ArbGas错误。 （可能是应用程序生成了一个不同的错误，而仍有少量 ArbGas，然后在错误处理程序的最开始出现一个 out-of-ArbGas 错误。 In this case, the second error would set the ArbGasRemaining to MaxInt256 and throw control back to the beginning of the error-handler, causing the error-handler to conclude that an out-of-ArbGas error was caused by the application. 我们认为这种合理的行为是正确的。）
 
-If the application code returns control to the runtime without generating an out-of-ArbGas error, the runtime can read the ArbGasRemaining register and subtract to determine how much ArbGas the application call used. This can be charged to the application's account.
+If the application code returns control to the runtime without generating an out-of-ArbGas error, the runtime can read the ArbGasRemaining register and subtract to determine how much ArbGas the application call used. 并充值进程序的账户中。
 
-The runtime can safely ignore the ArbGas accounting mechanism. If the special instructions are never used, the register will be set to MaxInt256, and will decrease but in practice will never get to zero, so no error will ever be generated.
+运行时可以安全地忽略掉ArbGas计量机制。 如果没有使用过特殊指令，寄存器会被设置为MaxInt256，其值会减少但实践中不可能到0，所以不会有错误产生。
 
 One caveat on this approach is that the application must be prevented from using the special instruction that modifies the ArbGasRemaining register. The compiler should not emit that instruction when compiling application code, and the AVM loader and runtime must scan application code before loading it, to make that that this AVM instruction (and other instructions treated as privileged) do not occur in the application code.
 
-## The Speed Limit
+## 速度上限
 
 The security of Arbitrum chains depends on the assumption that when one validator makes an assertion, other validators will check it and issue a challenge if it is wrong. This requires that the other validators have the time and resources to check each assertion in time to issue a timely challenge. The Arbitrum protocol takes this into account in setting deadlines for assertions.
 
-This sets an effective speed limit on execution of an Arbitrum VM: in the long run the VM cannot make progress faster than a validator can emulate its execution. If assertions are published at a rate faster than the speed limit, their deadlines will get farther and farther in the future. Due to the limit on how far in the future a deadline can be, this will eventually cause new assertions to be slowed down, thereby enforcing the effective speed limit.
+这就给AVM的运行设置了实际的速度上限：长远来看VM不可能运行地比验证者检验速度还要快。 If assertions are published at a rate faster than the speed limit, their deadlines will get farther and farther in the future. Due to the limit on how far in the future a deadline can be, this will eventually cause new assertions to be slowed down, thereby enforcing the effective speed limit.
 
-Being able to set the speed limit accurately depends on being able to estimate the time required to emulate an AVM computation with some accuracy. Any uncertainty in estimating emulation time will force us to set the speed limit lower, to be safe. And we do not want to set the speed limit lower, so we try to enable accurate estimation.
+Being able to set the speed limit accurately depends on being able to estimate the time required to emulate an AVM computation with some accuracy. Any uncertainty in estimating emulation time will force us to set the speed limit lower, to be safe. 而我们确实不想把速度上限设低，所以会尝试精确的估算。
 
 ## ArbGas
 
