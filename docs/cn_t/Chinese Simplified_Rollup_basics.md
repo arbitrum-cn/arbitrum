@@ -14,7 +14,7 @@ Rollups are a general approach to scaling open contracts, that is, contracts tha
 
 Where rollup systems differ is in how they ensure that the assertions are correct.
 
-## Optimistic Rollup
+## 乐观式Rollup
 
 Optimistic Rollup refers to a type of rollup that is optimistic in the sense that when an assertion is posted, it does not contain an accompanying proof guaranteeing its validity. Instead, when the assertion is posted on-chain, the validator making that assertion posts a bond, and there is a time window in which anyone can post their own bond and challenge the assertion, if they think it’s wrong. This is sometimes called a “fraud proof”. If the asserter is wrong, they will lose their bond. If the challenge period expires with no successful challenges, the assertion is accepted and becomes final.
 
