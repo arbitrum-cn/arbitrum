@@ -1,10 +1,10 @@
 ---
 id: Rollup_Protocol
-title: Arbitrum Rollup Protocol
-sidebar_label: Arbitrum Rollup Protocol
+title: Arbitrum Rollup协议
+sidebar_label: Arbitrum Rollup协议
 ---
 
-# Arbitrum Rollup 协议设计
+# Arbitrum Rollup Protocol Design
 
 Arbitrum Rollup is an off-chain protocol that is managed by an on-chain Ethereum contract. A dApp developer has a contract or set of contracts written in Solidity, and the developer wants to deploy those contracts onto a Layer 2 Arbitrum Rollup chain (ArbChain).
 
@@ -26,7 +26,7 @@ The current Arbitrum protocol makes important advances over the original Arbitru
 
 ![img](assets/rollupGraph2.png)
 
-### Staking
+### 质押
 
 Another important part of the protocol is staking. Anybody can put a stake on one of the square boxes in the tree. By staking on a square you are asserting that that square will eventually be confirmed by the protocol. In other words, you’re asserting that you have taken the correct branch at each DA along the path from the current state to the square you’re staked on. If you are wrong, you can expect to lose your stake.
 
@@ -119,7 +119,7 @@ Logically, the protocol's state consists of:
 - a set of stakers, and on which node of the tree each staker is staked; and
 - a set of challenges currently in progress.
 
-### Challenges
+### 挑战
 
 Each staker can be in at most one challenge at a time. At any time, anyone can start a challenge by pointing to a DA and two stakers such that (a) neither staker is currently in a challenge, and (b) both stakers are staked directly or indirectly on different children of the DA, and (c) both stakers initially created their stake before the DA's deadline. (A challenge between can start either before or after the relevant DA's deadline, as long as the three conditions listed above are met.)
 
