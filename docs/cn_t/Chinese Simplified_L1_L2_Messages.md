@@ -1,71 +1,71 @@
 ---
-id: L1_L2_层之间的通信
-title: 层之间消息传递
-sidebar_label: 层之间消息传递
+id: L1_L2_Messages
+title: Messaging Between Layers
+sidebar_label: Messaging Between Layers
 ---
 
-## 标准Arbitrum交易：来自客户端的调用
+## Standard Arbitrum Transactions: Calls from clients
 
-Arbitrum上标准的客户端调用的交易是通过EthBridge中Inbox.sendL2Message来实现的
+Standard, client-generated transaction calls on the Arbitrum chain are sent through the EthBridge using Inbox.sendL2Message:
 
 ```solidity
 function sendL2Message(address chain, bytes calldata messageData) external;
 
 ```
 
-正如在[Tx call生命周期] （../7_杂项/3_Tx call生命周期.md）中描述的那样，通常大部分调用都会走聚合器并被批量处理。
+Generally calls will come in batches from an aggregator as described in [Transaction Lifecycle](Tx_Lifecycle.md).
 
-不过，Arbitrum协议也支持在L1和L2之间传递信息。
+However, the Arbitrum protocol also offers ways of passing messages between the layer 1 and layer 2 chains.
 
-最常见的跨链通信目的是充值和提现；不过这只是Arbitrum支持的通用型跨链合约调用中的特定一种 本章节描述了这些通用协议；深入解释，请见洞悉Arbitrum: 桥接。
+The most common use-case for direct inter-chain communication is depositing and withdrawing assets; this, however, is only one specific application of generalized cross-chain contract calls that Arbitrum supports. This page covers the generalized protocol; for further explanation, see [Inside Arbitrum: Bridging](Inside_Arbitrum.md#bridging).
 
-## 以太坊到Arbitrum：Retryable Tickets（可重试票）
+## Ethereum to Arbitrum: Retryable Tickets
 
-可重试票据是 Arbitrum 协议的规范方法，此方法将通用消息从以太坊传递到 Arbitrum 可重试票据工作机理如下：一条L1交易提交到了收件箱中，其内容为向L2进行一笔转账（包含了calldata，callvalue，以及gas info）如果有提供任意数量的gas，L2上的交易会自动执行。在乐观的/正常的情况下，L2上的交易会立即成功。 如果该交易第一次没有执行成功，在L2上会进入一个『retry buffer重试缓存』。这意味着在一段时间内(与该链的挑战期有关，大约为一周)，任何人都可以通过再次执行来尝试赎回该L2交易票证。
+Retryable tickets are the Arbitrum protocol’s canonical method for passing generalized messages from Ethereum to Arbitrum. A retryable ticket is an L2 message encoded and delivered by L1; if gas is provided, it will be executed immediately. If no gas is provided or the execution reverts, it will be placed in the L2 retry buffer, where any user can re-execute for some fixed period (roughly one week).
 
-### 动机
+### Motivation
 
-可重试票证的设计是为了完美地处理跨链消息传递中各种潜在的棘手问题。
+Retryable tickets are designed to gracefully handle various potentially tricky aspects of cross-chain messaging:
 
-- 多付 L2 Gas费用： L1 合约必须为 L2 交易的执行提供 Gas 费用；如果 L1 一方多付了 Gas 费用，这就会引发如何处理多余的 ETH 费用问题。
+- **Overpaying for L2 Gas:** An L1 contract has to supply gas for the L2 transaction’s execution; if the L1 side overpays, this begets the questions of what to do with this excess Ether.
 
-- L2交易的恢复--打破原子性。对于许多L1到L2交易的用例来说，两层的状态更新都是原子性的，也就是说，如果L1端成功了，就能保证L2最终也会成功。 这里的典型例子是代币存款：在L1，代币被托管在一些合同中，并向L2发送一个消息以铸造一些相应的代币。 如果L1端成功了，而L2端被恢复了，那么用户只能失去他们的代币（也就是把代币捐给了桥梁合约）。
+- **L2 transaction reversion — breaking atomicity:** It is vital for many use-cases of L1 to L2 transactions that the state updates on both layers are atomic, i.e., if the L1 side succeeds, there is assurance that the L2 will eventually succeed as well. The canonical example here is a token deposit: on L1, tokens are escrowed in some contract, and a message is sent to L2 to mint some corresponding tokens. If the L1 side succeeds and the L2 reverts, the user has simply lost their tokens (i.e., donated them to the bridge contract).
 
-- L2交易还原--处理L2 callvalue。L1方必须为L2交易的callvalue提供以太币（通过存款）；如果L2交易被恢复，这就产生了如何处理这个亏损的以太币的问题。
+- **L2 transaction reversion — handling L2 callvalue:** The L1 side must supply the Ether for the callvalue of the L2 transaction (by depositing it); if the L2 transaction reverts, this begets the questions of what to do with this in-limbo Ether.
 
-以上发生的所有问题，可重试票可以非常完美地处理！
+Retryable tickets handle all these things (and handle them well!)
 
-### 交易类型/术语
+### Transaction Types / Terminology
 
-| Txn 类型 | 描述                                          | 状态                                                        | Tx ID                                                                  |
-| ------ | ------------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------- |
-| 可重试的票  | 位于重试缓冲区中的准事务，有一个可以执行的期限，即 "赎回"              | 包含消息时发出；如果用户提供足够的 ETH 来支付基本费用 + callvalue，则成功，否则失败。       | _keccak256(zeroPad(l2ChainId), zeroPad(BitFlipedinboxSequenceNumber))_ |
-| 赎回 Txn | 可重试的票证被成功赎回时；看起来像正常的L2交易。                   | 用户启动或通过自动兑换，成功兑换可重试票证后发出。                                 | _keccak256(zeroPad(retryable-ticket-id), 0)_                           |
-| 自动兑换记录 | 准交易 ArbOS 会自动创建，收到 ArbGas 提交时，立即尝试兑换可重试的票证。 | 尝试 / 发出 iff gas*gas-price > 0。 如果失败，可重试票证将保留在重试缓冲区中，继续等待。 | \_keccak256(zeroPad(retryable-ticket-id), 1)                         |
+| Txn Type           | Description                                                                                                                                           | Appearance                                                                                                                     | Tx ID                                                                  |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| Retryable Ticket   | Quasi-transaction that sits in the retry buffer and has a lifetime over which it can be executed, i.e., “redeemed.”                                   | Emitted when message is included; will succeed if user supplies sufficient ETH to cover base-fee + callvalue, otherwise fails. | _keccak256(zeroPad(l2ChainId), zeroPad(bitFlipedinboxSequenceNumber))_ |
+| Redemption Txn     | Transaction that results a retryable ticket being successfully redeemed; looks like a normal L2 transaction.                                          | Emitted after a retryable ticket is successfully redeemed, either user-initiated or via an auto-redeem.                        | _keccak256(zeroPad(retryable-ticket-id), 0)_                           |
+| Auto-Redeem Record | Quasi-transaction ArbOS creates automatically which attempts to redeem a retryable ticket immediately when it is submitted using the ArbGas provided. | Attempted / emitted iff gas\*gas-price > 0. If it fails, retryable ticket stays in the retry buffer.                         | \_keccak256(zeroPad(retryable-ticket-id), 1)                         |
 
-### 可重试票合约 API
+### Retryable Tickets Contract API
 
-通过调用 [Inbox.createRetrableTicket](./sol_contract_docs/md_docs/arb-bridge-eth/bridge/Inbox.md) 创建可重试票证。 其他涉及可重试票证的操作通过[ArbRetlyableTicket](./sol_contract_docs/md_docs/arb-os/arbos/builtin/ArbRetryableTx.md) 预编译接口在 L2 地址 0x000000000000000000000000006E 预编译。 (在正常情况下无需使用此合同)
+A retryable ticket is created by calling [Inbox.createRetryableTicket](./sol_contract_docs/md_docs/arb-bridge-eth/bridge/Inbox.md). Other operations involving retryable tickets are preformed via the [ArbRetryableTicket](./sol_contract_docs/md_docs/arb-os/arbos/builtin/ArbRetryableTx.md) precompile interface at L2 address 0x000000000000000000000000000000000000006E. (This contract won't need to be used under normal circumstances.)
 
-### 参数：
+### Parameters:
 
-在创建可重试票证时，L1 必须将总共 10 个参数，传递给 L2。
+There are a total of 10 parameters that the L1 must pass to the L2 when creating a retryable ticket.
 
-其中 5 个与分配的 ETH/Gas 有关：
+5 of them have to do with allocating ETH/Gas:
 
-- DepositValue（存款价值）：从L1到L2存入的ETH总量。
-- CallValue（呼叫值）：L2交易的调用值。
-- GasPrice（Gas 价格）：用 L2 Gas 标准价格出价，将会立即执行(可通过标准的eth\*gasPrice RPC查询)。
-- MaxGas（最大 Gas）：立即执行 L2 尝试的最快 Gas 限制（可以通过 _NodeInterface.estimateRetryableTicket* 估算）。
-- **MaxSubmissionCost:** Amount of ETH allocated to pay for the base submission fee. 基本提交费用是可重试交易独有的参数；向用户收取基本提交费用，以支付将票证的呼叫数据保存在重试缓冲区中的存储成本。 (当前的基础提交费用，可通过 ArbRetryableTx.getSubmissionPrice 查询)。
+- **DepositValue:** Total ETH deposited from L1 to L2.
+- **CallValue:** Call-value for L2 transaction.
+- **GasPrice:** L2 Gas price bid for immediate L2 execution attempt (queryable via standard eth\*gasPrice RPC)
+- **MaxGas:** Gas limit for immediate L2 execution attempt (can be estimated via \_NodeInterface.estimateRetryableTicket\*)
+- **MaxSubmissionCost:** Amount of ETH allocated to pay for the base submission fee. The base submission fee is a parameter unique to retryable transactions; the user is charged the base submission fee to cover the storage costs of keeping their ticket’s calldata in the retry buffer. (current base submission fee is queryable via `ArbRetryableTx.getSubmissionPrice`)
 
-直观地说：如果用户不想立即赎回，他们应该提供至少 `CallValue + MaxSubmission成本` 的存款价值。 If they do desire immediate execution, they should provide a DepositValue of at least `CallValue + MaxSubmissionCost + (GasPrice x MaxGas).`
+Intuitively: if a user does not desire immediate redemption, they should provide a DepositValue of at least `CallValue + MaxSubmissionCost`. If they do desire immediate execution, they should provide a DepositValue of at least `CallValue + MaxSubmissionCost + (GasPrice x MaxGas).`
 
-### 其他参数
+### Other Parameters
 
-- 目的地址：在 L2 上发起交易的地址。
-- 返还地址： L2 上所有多余的 gas 地址；即，用于基础提交成本后，多余 ETH (MaxSubmissionCost - ActualSubmissionCostPaid)和为 L2 执行提供的多余 ETH (GasPrice x MaxGas) -ActualETHSpentInExecution)。
-- 受益人：如果可重试票证超时或被取消，CallValue 将记入 L2 的地址。 受益人也有权取消可重试票的地址(如果票尚未兑换)。 Calldata: 编码 L2 合约调用的数据。 Calldata Size: 呼叫数据大小。
+- **Destination Address:** Address from which transaction will be initiated on L2.
+- **Credit-Back Address:** Address to which all excess gas is credited on L2; i.e., excess ETH for base submission cost (`MaxSubmissionCost - ActualSubmissionCostPaid`) and excess ETH provided for L2 execution (`(GasPrice x MaxGas) - ActualETHSpentInExecution`).
+- **Beneficiary:** Address to which CallValue will be credited to on L2 if the retryable ticket times out or is cancelled. The Beneficiary is also the address with the right to cancel a Retryable Ticket (if the ticket hasn’t been redeemed yet). `Calldata:` data encoding the L2 contract call. `Calldata Size:` CallData size.
 
 ### Important Note About Base Submission Fee
 
